@@ -10,66 +10,7 @@
 - shadcn/ui components
 - BetterAuth for authentication
 - Vercel for deployment
-
-## Database Schema
-
-```typescript
-// schema.ts
-import {
-  pgTable,
-  uuid,
-  text,
-  timestamp,
-  boolean,
-  jsonb,
-} from "drizzle-orm/pg-core";
-
-export const teams = pgTable("teams", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  createdBy: text("created_by").notNull(), // admin user id
-});
-
-export const teamMembers = pgTable("team_members", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  teamId: uuid("team_id").references(() => teams.id),
-  userId: text("user_id").notNull(),
-  role: text("role", { enum: ["admin", "member"] })
-    .notNull()
-    .default("member"),
-  addedAt: timestamp("added_at", { withTimezone: true }).defaultNow(),
-});
-
-export const projects = pgTable("projects", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  teamId: uuid("team_id").references(() => teams.id),
-  name: text("name").notNull(),
-  githubRepo: text("github_repo").notNull(),
-  githubToken: text("github_token"), // optional PAT for private repos
-  isPublic: boolean("is_public").default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  createdBy: text("created_by").notNull(), // user id
-});
-
-export const changelogs = pgTable("changelogs", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  projectId: uuid("project_id").references(() => projects.id),
-  version: text("version"),
-  publishedAt: timestamp("published_at", { withTimezone: true }).defaultNow(),
-  content: jsonb("content")
-    .$type<{
-      features: string[];
-      fixes: string[];
-      breaking: string[];
-      other: string[];
-    }>()
-    .notNull(),
-  rawCommits: text("raw_commits").array(),
-  isPublished: boolean("is_published").default(false),
-});
-```
+- Next MDX for markdown with rich text formatting
 
 ## App Structure
 
@@ -132,7 +73,6 @@ src/
 ### Admin Portal
 
 1. Team Management
-
    - Create/manage teams
    - Invite team members
    - Set team permissions
@@ -146,7 +86,6 @@ src/
 ### Team Dashboard
 
 1. Project Overview
-
    - List all team projects
    - Project status and recent changes
    - Quick actions
@@ -159,13 +98,11 @@ src/
 ### Developer Portal
 
 1. Project Management
-
    - Create/manage projects
    - Connect GitHub repositories
    - Set changelog preferences
 
 2. Changelog Generation
-
    - Fetch commits from GitHub API
    - AI processing pipeline:
      1. Filter relevant commits
@@ -188,74 +125,16 @@ src/
 4. Version comparison
 5. Markdown support
 
-## AI Implementation
+## Deployment
 
-### Prompt Engineering Strategy
-
-1. Initial commit processing:
-
-   ```typescript
-   type CommitProcessor = {
-     input: string[]; // Raw commit messages
-     output: {
-       type: "feature" | "fix" | "breaking" | "other";
-       relevance: number; // 0-1 score
-       description: string;
-     }[];
-   };
-   ```
-
-2. Changelog summarization:
-   - Group by impact level
-   - Convert technical details to user-facing language
-   - Maintain technical accuracy
-   - Include relevant links/references
-
-### GitHub Integration
-
-1. Webhook setup for real-time updates
-2. Commit history fetching
-3. Branch/PR tracking
-4. Release tag integration
-
-## Development Phases
-
-### Phase 1: Foundation (Week 1)
-
-- [ ] Project setup with Next.js 15
-- [ ] Drizzle schema and migrations setup
-- [ ] BetterAuth integration with team support
-- [ ] Core UI components and layouts
-- [ ] Admin dashboard basics
-
-### Phase 2: Core Features (Week 2)
-
-- [ ] GitHub integration
-- [ ] AI processing pipeline
-- [ ] Basic changelog generation
-- [ ] Developer dashboard
-
-### Phase 3: Polish (Week 3)
-
-- [ ] Public changelog site
-- [ ] Advanced features (search, RSS)
-- [ ] Testing & optimization
-- [ ] Documentation
-
-## Deployment Strategy
-
-1. Neon DB setup
-2. Drizzle migrations deployment
-3. Vercel project configuration
-4. Environment variables:
-   ```env
-   DATABASE_URL=
-   GITHUB_CLIENT_ID=
-   GITHUB_CLIENT_SECRET=
-   OPENAI_API_KEY=
-   BETTERAUTH_SECRET=
-   ADMIN_EMAIL= # Initial admin user
-   ```
+```env
+DATABASE_URL=
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+OPENAI_API_KEY=
+BETTERAUTH_SECRET=
+ADMIN_EMAIL= # Initial admin user
+```
 
 ## Future Enhancements
 
