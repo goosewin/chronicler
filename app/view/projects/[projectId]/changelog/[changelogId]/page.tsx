@@ -5,6 +5,8 @@ import { Calendar, GitBranch } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 async function getChangelogData(changelogId: string) {
   const changelog = await ChangelogsInteractor.getWithProject(changelogId);
 
@@ -18,9 +20,9 @@ async function getChangelogData(changelogId: string) {
 export default async function PublicChangelogPage({
   params,
 }: {
-  params: { projectId: string; changelogId: string };
+  params: Promise<{ projectId: string; changelogId: string }>;
 }) {
-  const { projectId, changelogId } = params;
+  const { projectId, changelogId } = await params;
   const changelog = await getChangelogData(changelogId);
 
   if (!changelog) {

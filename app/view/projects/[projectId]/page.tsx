@@ -11,6 +11,8 @@ import { Calendar, GitBranch } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 async function getProjectData(projectId: string) {
   const project = await ProjectsInteractor.getWithDetails(projectId);
 
