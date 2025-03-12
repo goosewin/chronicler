@@ -92,13 +92,13 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    let updateData: Partial<Changelog> = { ...body };
+    const updateData: Partial<Changelog> = { ...body };
 
-    if (typeof body.releaseDate === 'string') {
+    if (typeof body.releaseDate === "string") {
       updateData.releaseDate = new Date(body.releaseDate);
     }
 
-    if ('description' in updateData) {
+    if ("description" in updateData) {
       delete updateData.description;
     }
 

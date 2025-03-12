@@ -1,8 +1,5 @@
 import { MarkdownContent } from "@/components/markdown-content";
-import {
-  Card,
-  CardContent
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ChangelogsInteractor } from "@/lib/interactors/changelogs";
 import { Calendar, GitBranch } from "lucide-react";
 import Link from "next/link";

@@ -69,7 +69,7 @@ export default function EditChangelogPage({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [date, setDate] = useState<Date>(new Date());
-  const [changelog, setChangelog] = useState<Changelog | null>(null);
+  const [, setChangelog] = useState<Changelog | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { projectId, changelogId } = use(params);
 
@@ -131,6 +131,7 @@ export default function EditChangelogPage({
     });
 
     return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.watch]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -213,7 +214,9 @@ export default function EditChangelogPage({
                 Failed to load changelog data: {error}
               </p>
               <Button
-                onClick={() => router.push(`/projects/${projectId}/changelog/${changelogId}`)}
+                onClick={() =>
+                  router.push(`/projects/${projectId}/changelog/${changelogId}`)
+                }
                 variant="secondary"
               >
                 Back to Changelog
@@ -279,7 +282,7 @@ export default function EditChangelogPage({
                               variant="outline"
                               className={cn(
                                 "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
+                                !field.value && "text-muted-foreground",
                               )}
                             >
                               {field.value ? (
@@ -302,8 +305,7 @@ export default function EditChangelogPage({
                               }
                             }}
                             disabled={(date) =>
-                              date > new Date() ||
-                              date < new Date("1900-01-01")
+                              date > new Date() || date < new Date("1900-01-01")
                             }
                             initialFocus
                           />
@@ -325,10 +327,7 @@ export default function EditChangelogPage({
                   <FormItem>
                     <FormLabel>Commit Hash (Optional)</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="git commit hash or tag"
-                        {...field}
-                      />
+                      <Input placeholder="git commit hash or tag" {...field} />
                     </FormControl>
                     <FormDescription>
                       Git commit hash, tag, or reference for this release
@@ -383,7 +382,9 @@ export default function EditChangelogPage({
               <Button
                 variant="outline"
                 type="button"
-                onClick={() => router.push(`/projects/${projectId}/changelog/${changelogId}`)}
+                onClick={() =>
+                  router.push(`/projects/${projectId}/changelog/${changelogId}`)
+                }
               >
                 Cancel
               </Button>
@@ -396,4 +397,4 @@ export default function EditChangelogPage({
       </Card>
     </div>
   );
-} 
+}

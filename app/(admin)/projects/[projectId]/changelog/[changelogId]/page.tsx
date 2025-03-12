@@ -12,12 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Calendar, Edit, Tag, Trash2 } from "lucide-react";
@@ -93,7 +88,7 @@ export default function ChangelogDetailsPage({
     setIsDeleting(true);
     try {
       const response = await fetch(`/api/changelogs/${changelogId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
@@ -106,7 +101,10 @@ export default function ChangelogDetailsPage({
     } catch (error) {
       console.error("Error deleting changelog:", error);
       toast.error("Failed to delete changelog", {
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred",
       });
     } finally {
       setIsDeleting(false);
@@ -222,8 +220,8 @@ export default function ChangelogDetailsPage({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action will permanently delete the changelog for version "{changelog?.version}".
-              This action cannot be undone.
+              This action will permanently delete the changelog for version
+              &quot;{changelog?.version}&quot;. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

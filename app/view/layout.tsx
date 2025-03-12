@@ -15,7 +15,10 @@ export default function ViewLayout({
               <Layers className="h-6 w-6 text-primary" />
               <span className="text-xl font-bold">Chronicler</span>
             </Link>
-            <Link href="/changelogs" className="flex items-center gap-2 ml-auto">
+            <Link
+              href="/changelogs"
+              className="flex items-center gap-2 ml-auto"
+            >
               <Home className="h-4 w-4 text-primary" />
               <span className="text-sm font-bold">View Changelogs</span>
             </Link>

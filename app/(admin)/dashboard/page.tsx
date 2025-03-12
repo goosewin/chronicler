@@ -141,7 +141,10 @@ export default async function DashboardPage() {
                           </Link>
                         </p>
                         <div className="text-sm text-muted-foreground line-clamp-1 max-w-md">
-                          {changelog.content.replace(/[#*`]/g, '').substring(0, 100)}...
+                          {changelog.content
+                            .replace(/[#*`]/g, "")
+                            .substring(0, 100)}
+                          ...
                         </div>
                       </div>
                       <div className="text-sm text-muted-foreground">

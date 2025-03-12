@@ -73,8 +73,8 @@ export default async function ChangelogsPage() {
                 key={changelog.id}
                 changelog={{
                   ...changelog,
-                  projectName: changelog.project?.name ?? '',
-                  project: changelog.project ?? undefined
+                  projectName: changelog.project?.name ?? "",
+                  project: changelog.project ?? undefined,
                 }}
               />
             ))}

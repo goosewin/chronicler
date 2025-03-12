@@ -36,10 +36,10 @@ export default async function ProjectPage({
   const changelogs = project.changelogs || [];
   const formattedDate = project.updatedAt
     ? new Date(project.updatedAt).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
     : "N/A";
 
   return (
@@ -129,10 +129,10 @@ export default async function ProjectPage({
               <p className="font-medium">
                 {project.lastSynced
                   ? new Date(project.lastSynced).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })
                   : "Never"}
               </p>
             </div>

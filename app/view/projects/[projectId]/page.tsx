@@ -38,10 +38,10 @@ export default async function PublicProjectPage({
   // Format the date
   const formattedDate = project.updatedAt
     ? new Date(project.updatedAt).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
     : "N/A";
 
   return (
@@ -93,13 +93,14 @@ export default async function PublicProjectPage({
                           {changelog.version}
                         </CardTitle>
                         <CardDescription>
-                          {new Date(
-                            changelog.releaseDate,
-                          ).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
+                          {new Date(changelog.releaseDate).toLocaleDateString(
+                            "en-US",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            },
+                          )}
                         </CardDescription>
                       </div>
                     </div>

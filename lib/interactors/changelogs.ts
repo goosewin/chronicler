@@ -50,9 +50,9 @@ export const ChangelogsInteractor = {
     const query = includeUnpublished
       ? eq(changelog.projectId, projectId)
       : and(
-        eq(changelog.projectId, projectId),
-        eq(changelog.isPublished, true),
-      );
+          eq(changelog.projectId, projectId),
+          eq(changelog.isPublished, true),
+        );
 
     return db
       .select()

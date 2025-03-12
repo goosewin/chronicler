@@ -43,7 +43,7 @@ interface ChangelogCardProps {
     isPublished: boolean;
     projectId: string;
     projectName?: string;
-    project?: { name: string; };
+    project?: { name: string };
   };
 }
 
@@ -52,9 +52,10 @@ export function ChangelogCard({ changelog }: ChangelogCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const releaseDate = changelog.releaseDate instanceof Date
-    ? changelog.releaseDate
-    : new Date(changelog.releaseDate);
+  const releaseDate =
+    changelog.releaseDate instanceof Date
+      ? changelog.releaseDate
+      : new Date(changelog.releaseDate);
 
   const formattedDate = releaseDate.toLocaleDateString("en-US", {
     month: "short",
@@ -81,7 +82,10 @@ export function ChangelogCard({ changelog }: ChangelogCardProps) {
     } catch (error) {
       console.error("Error deleting changelog:", error);
       toast.error("Failed to delete changelog", {
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred",
       });
     } finally {
       setIsDeleting(false);
@@ -133,7 +137,9 @@ export function ChangelogCard({ changelog }: ChangelogCardProps) {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   onClick={() =>
-                    router.push(`/projects/${changelog.projectId}/changelog/${changelog.id}/edit`)
+                    router.push(
+                      `/projects/${changelog.projectId}/changelog/${changelog.id}/edit`,
+                    )
                   }
                 >
                   <Edit className="mr-2 h-4 w-4" />
@@ -176,8 +182,8 @@ export function ChangelogCard({ changelog }: ChangelogCardProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action will permanently delete the changelog for version "{changelog.version}".
-              This action cannot be undone.
+              This action will permanently delete the changelog for version
+              &quot;{changelog.version}&quot;. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -194,4 +200,4 @@ export function ChangelogCard({ changelog }: ChangelogCardProps) {
       </AlertDialog>
     </>
   );
-} 
+}

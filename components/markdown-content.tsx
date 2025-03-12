@@ -1,21 +1,21 @@
-'use client';
+"use client";
 
-import { cn } from '@/lib/utils';
-import { MDXRemote, MDXRemoteSerializeResult } from 'next-mdx-remote';
-import { serialize } from 'next-mdx-remote/serialize';
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import rehypeHighlight from 'rehype-highlight';
-import rehypeSlug from 'rehype-slug';
-import remarkGfm from 'remark-gfm';
+import { cn } from "@/lib/utils";
+import { MDXRemote, MDXRemoteSerializeResult } from "next-mdx-remote";
+import { serialize } from "next-mdx-remote/serialize";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import rehypeHighlight from "rehype-highlight";
+import rehypeSlug from "rehype-slug";
+import remarkGfm from "remark-gfm";
 
 const components = {
-  a: ({ className, href, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <Link
-      className={className}
-      href={href || '#'}
-      {...props}
-    />
+  a: ({
+    className,
+    href,
+    ...props
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <Link className={className} href={href || "#"} {...props} />
   ),
 };
 
@@ -25,7 +25,9 @@ interface MarkdownContentProps {
 }
 
 export function MarkdownContent({ content, className }: MarkdownContentProps) {
-  const [mdxSource, setMdxSource] = useState<MDXRemoteSerializeResult | null>(null);
+  const [mdxSource, setMdxSource] = useState<MDXRemoteSerializeResult | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,8 +52,8 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
         setMdxSource(serialized);
         setIsLoading(false);
       } catch (err) {
-        console.error('Error processing markdown:', err);
-        setError('Failed to process markdown content');
+        console.error("Error processing markdown:", err);
+        setError("Failed to process markdown content");
         setIsLoading(false);
       }
     }
@@ -60,20 +62,32 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
   }, [content]);
 
   if (isLoading) {
-    return <div className={cn('prose dark:prose-invert', className)}>Loading content...</div>;
+    return (
+      <div className={cn("prose dark:prose-invert", className)}>
+        Loading content...
+      </div>
+    );
   }
 
   if (error) {
-    return <div className={cn('prose dark:prose-invert text-red-500', className)}>Error: {error}</div>;
+    return (
+      <div className={cn("prose dark:prose-invert text-red-500", className)}>
+        Error: {error}
+      </div>
+    );
   }
 
   if (!mdxSource) {
-    return <div className={cn('prose dark:prose-invert', className)}>No content available</div>;
+    return (
+      <div className={cn("prose dark:prose-invert", className)}>
+        No content available
+      </div>
+    );
   }
 
   return (
-    <div className={cn('prose dark:prose-invert', className)}>
+    <div className={cn("prose dark:prose-invert", className)}>
       <MDXRemote {...mdxSource} components={components} />
     </div>
   );
-} 
+}

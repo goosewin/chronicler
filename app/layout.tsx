@@ -10,8 +10,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Chronicler - Intelligent Changelog Management",
-  description:
-    "Automate and manage your project changelogs with LLMs",
+  description: "Automate and manage your project changelogs with LLMs",
 };
 
 export default function RootLayout({

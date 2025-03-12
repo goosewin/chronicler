@@ -70,4 +70,4 @@ export async function PUT(request: NextRequest) {
     console.error("Error updating user profile:", error);
     return apiError("Failed to update user profile");
   }
-} 
+}

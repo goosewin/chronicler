@@ -53,17 +53,17 @@ export default function SettingsPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/user/profile', {
-        method: 'PUT',
+      const response = await fetch("/api/user/profile", {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ name, email }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update profile');
+        throw new Error(errorData.error || "Failed to update profile");
       }
 
       setIsDirty(false);
@@ -74,9 +74,12 @@ export default function SettingsPage() {
       // Refresh the session to get the updated user data
       refetch();
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error("Error updating profile:", error);
       toast.error("Failed to update profile", {
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred",
       });
     } finally {
       setIsLoading(false);
@@ -101,7 +104,8 @@ export default function SettingsPage() {
     setIsLoading(true);
 
     toast.info("Password functionality", {
-      description: "Password change functionality will be implemented in a future update.",
+      description:
+        "Password change functionality will be implemented in a future update.",
     });
 
     setIsLoading(false);
@@ -148,10 +152,7 @@ export default function SettingsPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button
-                disabled={!isDirty || isLoading}
-                onClick={handleSave}
-              >
+              <Button disabled={!isDirty || isLoading} onClick={handleSave}>
                 {isLoading ? "Saving..." : "Save Changes"}
               </Button>
             </CardFooter>
@@ -200,7 +201,12 @@ export default function SettingsPage() {
               <Button
                 variant="outline"
                 onClick={handlePasswordChange}
-                disabled={!currentPassword || !newPassword || !confirmPassword || isLoading}
+                disabled={
+                  !currentPassword ||
+                  !newPassword ||
+                  !confirmPassword ||
+                  isLoading
+                }
               >
                 {isLoading ? "Processing..." : "Change Password"}
               </Button>
