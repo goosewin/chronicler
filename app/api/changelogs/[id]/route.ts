@@ -5,10 +5,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
-  params: Promise<{ id: string }>,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
+
     const changelog = await ChangelogsInteractor.getById(id);
 
     if (!changelog) {
@@ -56,7 +57,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth.api.getSession({
@@ -105,7 +106,7 @@ export async function PUT(
     const updatedChangelog = await ChangelogsInteractor.update(id, updateData);
     return NextResponse.json({ changelog: updatedChangelog });
   } catch (error) {
-    console.error(`Error updating changelog ${params.id}:`, error);
+    console.error(`Error updating changelog ${(await params).id}:`, error);
 
     return NextResponse.json(
       { error: "Failed to update changelog" },
@@ -116,7 +117,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  params: Promise<{ id: string }>,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth.api.getSession({

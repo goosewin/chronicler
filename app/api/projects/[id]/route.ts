@@ -9,10 +9,11 @@ import { NextRequest } from "next/server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
+
     const project = await ProjectsInteractor.getWithDetails(id);
 
     if (!project) {
@@ -38,14 +39,14 @@ export async function GET(
 
     return apiSuccess({ project });
   } catch (error) {
-    console.error(`Error fetching project ${params.id}:`, error);
+    console.error(`Error fetching project ${(await params).id}:`, error);
     return apiError("Failed to fetch project");
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  params: Promise<{ id: string }>,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const authResult = await requireAuth(request);
@@ -70,13 +71,13 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const authResult = await requireAuth(request);
     if (authResult.error) return authResult.error;
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check if user is the owner
     const ownershipResult = await requireProjectOwnership(
@@ -88,7 +89,7 @@ export async function DELETE(
     await ProjectsInteractor.delete(id);
     return apiSuccess({ success: true });
   } catch (error) {
-    console.error(`Error deleting project ${params.id}:`, error);
+    console.error(`Error deleting project ${(await params).id}:`, error);
     return apiError("Failed to delete project");
   }
 }
