@@ -1,20 +1,30 @@
 # Chronicler
 
-> AI-powered changelog generator for development teams
+> AI-powered changelog generator
 
-Chronicler is a modern, team-focused changelog management system that automatically generates user-friendly changelogs from your Git commits. It uses AI to transform technical commit messages into clear, meaningful changelog entries that your users will actually understand.
+Chronicler is a modern changelog management system that automatically generates user-friendly changelogs from your Git commits. It uses AI to transform technical commit messages into clear, meaningful changelog entries that your users will actually understand.
 
 ![Chronicler Screenshot](docs/screenshot.png)
 
 ## Features
 
 - 🤖 **AI-Powered Generation**: Automatically convert commit messages into user-friendly changelog entries
-- 👥 **Team-Focused**: Manage changelogs across multiple projects and teams
 - 🔄 **GitHub Integration**: Seamless sync with your GitHub repositories
 - 🎨 **Beautiful Public Pages**: Clean, searchable changelog pages for your users
-- 🔒 **Access Control**: Granular permissions for teams and projects
 - 📱 **Responsive Design**: Works great on all devices
 - 🚀 **Easy Deployment**: Deploy to Vercel with one click
+
+## AI-Powered Workflows
+
+Chronicler leverages [Mastra](https://github.com/mastralib/mastra), a powerful framework for building AI-driven workflows:
+
+- **Intelligent Agents** - Custom AI agents analyze commits and generate human-readable changelog entries
+- **Automated Processing** - Extract meaningful changes from technical commit messages
+- **Context-Aware Generation** - Group related changes and maintain semantic consistency
+- **Custom Tools** - Purpose-built tools help agents understand your codebase and repository structure
+- **Workflow Orchestration** - Multi-step AI workflows ensure quality and consistency
+
+The AI system uses a combination of LLM-powered agents and tailored workflows to transform cryptic commit messages like `fix(auth): resolve JWT validation edge case #142` into user-friendly descriptions like "Fixed an issue where some users might experience login problems in rare circumstances."
 
 ## Quick Start
 
@@ -67,7 +77,7 @@ ADMIN_EMAIL=           # Initial admin user email
 - **Framework**: Next.js 15 (App Router)
 - **Database**: Neon (Postgres) + Drizzle ORM
 - **Auth**: BetterAuth
-- **AI**: Vercel AI SDK + OpenAI
+- **AI**: Vercel AI SDK + OpenAI + Mastra for workflow orchestration
 - **Styling**: Tailwind CSS 4 + shadcn/ui
 - **Deployment**: Vercel
 
@@ -76,11 +86,10 @@ ADMIN_EMAIL=           # Initial admin user email
 ### Project Structure
 
 ```
-src/
-├── app/              # Next.js app router pages
-├── components/       # React components
-├── lib/             # Utility functions and configs
-└── styles/          # Global styles
+app/              # Next.js app router pages
+components/       # React components
+lib/             # Utility functions and configs
+public/          # Static assets
 ```
 
 ### Commands
@@ -102,12 +111,4 @@ pnpm db:studio       # Open Drizzle Studio
 3. Set up your environment variables
 4. Deploy!
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyourusername%2Fchronicler)
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fgoosewin%2Fchronicler)
