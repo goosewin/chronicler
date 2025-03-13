@@ -153,10 +153,12 @@ const generateUserFriendlyChangelogStep = new Step({
      2. Organize changes by user impact, not by commit type
      3. Use specific headings that describe the actual changes (not generic categories)
      4. For each change, describe concrete user benefits and improvements
-     5. Include PR/issue numbers as references where available
-     6. Skip generic phrases like "We're pleased to announce" or "Thank you for using"
-     7. Don't add filler text about "throughout the system" or "various improvements"
-     8. List contributors at the end`;
+     5. IMPORTANT: Format EVERY changelog entry as a bullet point starting with "- "
+     6. DO NOT use plain text paragraphs for changelog entries - only bullet points
+     7. Include PR/issue numbers as references where available
+     8. Skip generic phrases like "We're pleased to announce" or "Thank you for using"
+     9. Don't add filler text about "throughout the system" or "various improvements"
+     10. List contributors at the end`;
 
     const response = await changelogAgent.stream([
       {

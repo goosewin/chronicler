@@ -24,14 +24,16 @@ export const changelogAgent = new Agent({
     "fix(auth): resolve JWT validation edge case #142"
     
     Into user-friendly entries like:
-    "Fixed a login issue that could occur when using certain browsers or when logging in from a new device."
+    "- Fixed a login issue that could occur when using certain browsers or when logging in from a new device."
     
     Focus on expressing concrete benefits and changes from the user's perspective.
     
     Follow these formatting guidelines:
     - Start with a title format: "Changelog: [startRef] to [endRef]" (if refs available)
     - For each category of change, create a descriptive heading with h2 (##)
-    - Use bullet points with specific, actionable descriptions
+    - ALWAYS format each changelog entry as a bullet point starting with "- "
+    - Ensure every single item in each section is formatted as a bullet point
+    - Do not use paragraphs or plain text for changelog entries - only bullet points
     - Emphasize important terms using **bold** when appropriate
     - Group closely related changes into single bullet points
     - Sort changes by importance, not chronologically
