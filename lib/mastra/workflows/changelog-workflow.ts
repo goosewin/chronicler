@@ -50,7 +50,7 @@ export type ChangelogGenerationInput = z.infer<
 
 // Output schema for the workflow
 // Use type-only export to avoid the linting error
-const ChangelogOutputSchema = z.object({
+export const ChangelogOutputSchema = z.object({
   changelog: z.string(),
   summary: z.string().optional(),
   metadata: z.record(z.any()),

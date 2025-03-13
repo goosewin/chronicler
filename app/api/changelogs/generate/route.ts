@@ -110,7 +110,27 @@ export async function POST(request: NextRequest) {
       console.log(`Workflow run completed with ID: ${runId}`);
 
       // The workflow result has a different structure than expected
-      const workflowResult = result as any;
+      const workflowResult = result as {
+        results?: {
+          "analyze-commits"?: {
+            status: string;
+            output?: {
+              categories?: Record<string, Commit[]>;
+            };
+          };
+        };
+        steps?: {
+          "generate-user-friendly-changelog"?: {
+            result?: string;
+          };
+          "generate-summary"?: {
+            result?: string;
+          };
+        };
+        changelog?: string;
+        summary?: string;
+        metadata?: Record<string, unknown>;
+      };
 
       // Check if the workflow had a successful result
       let userFriendlyChangelog = "No changelog generated";
@@ -378,23 +398,14 @@ function generateChangelogWithLLM(commits: Commit[], title: string): string {
   }
 
   try {
-    // Extract commit messages for the prompt
+    // The commitMessages variable is not used, so we can remove it
+    // or comment it out if it might be needed in the future
+    /* 
     const commitMessages = commits
       .map((commit) => {
         if (typeof commit === "string") return commit;
         if (commit && typeof commit === "object") {
-          // Include category if available for better context
-          const category = (commit as { category?: string }).category ? `[${(commit as { category?: string }).category}] ` : "";
-          return `${category}${commit.message || ""}`;
-        }
-        return "";
-      })
-      .filter(Boolean);
-
-    // Here's what we would send to the LLM
-    /* const prompt = `
-    Generate a professional, user-friendly changelog...
-    `; */
+    */
 
     // For now, return a Twilio-styled changelog using the available commit data
     // This is a temporary solution until the LLM integration is fully implemented
