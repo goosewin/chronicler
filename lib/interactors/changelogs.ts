@@ -1,7 +1,7 @@
 import db from "@/lib/db/client";
 import { changelog, collaborator, project } from "@/lib/db/schema";
 import { Changelog, ChangelogWithProject, NewChangelog } from "@/lib/db/types";
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, inArray, or } from "drizzle-orm";
 
 export const ChangelogsInteractor = {
   async create(data: NewChangelog): Promise<Changelog> {
@@ -117,5 +117,77 @@ export const ChangelogsInteractor = {
       );
 
     return !!collaboratorResult;
+  },
+  async getAllForUser(userId: string): Promise<ChangelogWithProject[]> {
+    // Get all projects the user has access to (owned or collaborated)
+    const ownedProjects = await db
+      .select()
+      .from(project)
+      .where(eq(project.userId, userId));
+
+    const collaborations = await db
+      .select({
+        projectId: collaborator.projectId,
+      })
+      .from(collaborator)
+      .where(eq(collaborator.userId, userId));
+
+    const projectIds = [
+      ...ownedProjects.map((p) => p.id),
+      ...collaborations.map((c) => c.projectId),
+    ];
+
+    if (projectIds.length === 0) return [];
+
+    // Get all changelogs for these projects
+    const changelogs = await db
+      .select()
+      .from(changelog)
+      .where(inArray(changelog.projectId, projectIds))
+      .orderBy(desc(changelog.releaseDate));
+
+    // Get project details for all changelogs
+    const projects = await db
+      .select()
+      .from(project)
+      .where(inArray(project.id, projectIds));
+
+    const projectMap = new Map(projects.map((p) => [p.id, p]));
+
+    return changelogs.map((c) => ({
+      ...c,
+      project: projectMap.get(c.projectId),
+    }));
+  },
+  async getPublic(): Promise<ChangelogWithProject[]> {
+    // Get all public projects
+    const publicProjects = await db
+      .select()
+      .from(project)
+      .where(eq(project.isPublic, true));
+
+    if (publicProjects.length === 0) return [];
+
+    // Get all changelogs for public projects
+    const changelogs = await db
+      .select()
+      .from(changelog)
+      .where(
+        and(
+          inArray(
+            changelog.projectId,
+            publicProjects.map((p) => p.id),
+          ),
+          eq(changelog.isPublished, true),
+        ),
+      )
+      .orderBy(desc(changelog.releaseDate));
+
+    const projectMap = new Map(publicProjects.map((p) => [p.id, p]));
+
+    return changelogs.map((c) => ({
+      ...c,
+      project: projectMap.get(c.projectId),
+    }));
   },
 };

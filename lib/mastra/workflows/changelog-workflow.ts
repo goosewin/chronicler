@@ -6,7 +6,6 @@ import {
   generateChangelogMarkdownTool,
 } from "../tools/commit-tools";
 
-// Type for the commits input
 const CommitSchema = z.object({
   hash: z.string(),
   message: z.string(),
@@ -25,7 +24,6 @@ const CommitDataSchema = z.object({
 
 export type CommitData = z.infer<typeof CommitDataSchema>;
 
-// Type for categorized commits
 export interface CategoryStats {
   total: number;
   byType: Record<string, number>;
@@ -36,7 +34,6 @@ export interface CategorizedCommits {
   stats: CategoryStats;
 }
 
-// Input schema for the workflow
 const ChangelogGenerationInputSchema = z.object({
   commitData: CommitDataSchema,
   title: z.string().optional(),
@@ -48,18 +45,14 @@ export type ChangelogGenerationInput = z.infer<
   typeof ChangelogGenerationInputSchema
 >;
 
-// Output schema for the workflow
-// Use type-only export to avoid the linting error
 export const ChangelogOutputSchema = z.object({
   changelog: z.string(),
   summary: z.string().optional(),
   metadata: z.record(z.any()),
 });
 
-// Export as type only since it's only used as a type
 export type ChangelogOutput = z.infer<typeof ChangelogOutputSchema>;
 
-// Step 1: Analyze the commit messages and categorize them
 const analyzeCommitsStep = new Step({
   id: "analyze-commits",
   description: "Analyzes commit messages and categorizes them by type",
@@ -73,6 +66,26 @@ const analyzeCommitsStep = new Step({
       throw new Error("Input data not found");
     }
 
+    const MAX_COMMITS = 300;
+    if (input.commitData.commits.length > MAX_COMMITS) {
+      console.log(
+        `Large dataset detected (${input.commitData.commits.length} commits). Limiting to ${MAX_COMMITS} most recent commits.`,
+      );
+
+      const limitedCommitData = {
+        ...input.commitData,
+        commits: [...input.commitData.commits]
+          .sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+          )
+          .slice(0, MAX_COMMITS),
+      };
+
+      return analyzeCommitsTool.execute?.({
+        context: { commitData: limitedCommitData },
+      });
+    }
+
     return analyzeCommitsTool.execute?.({
       context: { commitData: input.commitData },
     });
@@ -84,7 +97,13 @@ const generateTechnicalChangelogStep = new Step({
   id: "generate-technical-changelog",
   description: "Generates a technical changelog in markdown format",
   inputSchema: z.object({
-    categorizedCommits: z.any(), // Using any as a temporary solution
+    categorizedCommits: z.object({
+      byType: z.record(z.array(CommitSchema)),
+      stats: z.object({
+        total: z.number(),
+        byType: z.record(z.number()),
+      }),
+    }),
     title: z.string().optional(),
     includeStats: z.boolean().optional(),
   }),
@@ -97,17 +116,40 @@ const generateTechnicalChangelogStep = new Step({
       throw new Error("Required data not found");
     }
 
+    const MAX_COMMITS_PER_CATEGORY = 50;
+    const limitedCommits = {
+      byType: {} as Record<string, Commit[]>,
+      stats: { ...categorizedCommits.stats },
+    };
+
+    let totalCommits = 0;
+    for (const category in categorizedCommits.byType) {
+      const commits = categorizedCommits.byType[category];
+      totalCommits += commits.length;
+
+      limitedCommits.byType[category] = commits.slice(
+        0,
+        MAX_COMMITS_PER_CATEGORY,
+      );
+    }
+
+    if (totalCommits > 500) {
+      console.log(
+        `Large dataset detected (${totalCommits} commits). Limiting to ${MAX_COMMITS_PER_CATEGORY} commits per category.`,
+      );
+    }
+
     return generateChangelogMarkdownTool.execute?.({
       context: {
         categorizedCommits: {
-          categories: categorizedCommits.byType,
+          categories: limitedCommits.byType,
           stats: {
             ...categorizedCommits.stats,
-            authors: [],
-            byCategory: {},
+            authors: input.commitData.authors,
+            byCategory: categorizedCommits.stats.byType,
             dateRange: {
-              start: "",
-              end: "",
+              start: input.commitData.startDate,
+              end: input.commitData.endDate,
             },
           },
         },
@@ -149,7 +191,7 @@ const generateUserFriendlyChangelogStep = new Step({
      Contributors: ${input.commitData.authors.join(", ")}
      
      Format your response as follows:
-     1. Title: "Changelog: [first 8 chars of startRef] to [first 8 chars of endRef]"
+     1. Title: Do not include a title. Use subheadings for each section
      2. Organize changes by user impact, not by commit type
      3. Use specific headings that describe the actual changes (not generic categories)
      4. For each change, describe concrete user benefits and improvements
@@ -220,7 +262,6 @@ const generateSummaryStep = new Step({
   },
 });
 
-// Define the workflow
 const changelogWorkflow = new Workflow({
   name: "changelog-workflow",
   triggerSchema: ChangelogGenerationInputSchema,

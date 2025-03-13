@@ -108,8 +108,13 @@ export async function PUT(
           source: body.generationMetadata.source,
           startRef: body.generationMetadata.startRef,
           endRef: body.generationMetadata.endRef,
+          commitHash: body.generationMetadata.commitHash,
           prNumber: body.generationMetadata.prNumber,
+          startPRNumber: body.generationMetadata.startPRNumber,
+          endPRNumber: body.generationMetadata.endPRNumber,
           releaseTag: body.generationMetadata.releaseTag,
+          startReleaseTag: body.generationMetadata.startReleaseTag,
+          endReleaseTag: body.generationMetadata.endReleaseTag,
           generatedAt:
             body.generationMetadata.generatedAt || new Date().toISOString(),
         },

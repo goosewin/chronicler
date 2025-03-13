@@ -8,6 +8,7 @@ import {
 } from "@/lib/github/commits";
 import { fetchPullRequestCommits as fetchPRCommits } from "@/lib/github/pull-requests";
 import { fetchReleaseCommits as fetchRelCommits } from "@/lib/github/releases";
+import { mastra } from "@/lib/mastra";
 import { apiError, apiSuccess } from "@/lib/utils";
 import { NextRequest } from "next/server";
 
@@ -18,8 +19,18 @@ interface CommitData {
   authors: string[];
 }
 
+const workflow = mastra.getWorkflow("changelogWorkflow");
+
 export async function POST(request: NextRequest) {
   try {
+    // Validate workflow is available
+    if (!workflow) {
+      return apiError(
+        "Changelog generation service is unavailable. Please try again later.",
+        503,
+      );
+    }
+
     const authResult = await requireAuth(request);
     if (authResult.error) return authResult.error;
 
@@ -124,18 +135,120 @@ export async function POST(request: NextRequest) {
       return apiError("No commits found for the specified criteria", 404);
     }
 
-    // Generate the changelog (using simplified approach for now)
-    const changelog = generateSimpleChangelog(commitData);
+    try {
+      // Generate the changelog using the LLM-powered workflow
+      const { start } = workflow.createRun();
 
-    return apiSuccess({
-      changelog,
-      metadata: {
-        commitCount: commitData.commits.length,
-        startDate: commitData.startDate,
-        endDate: commitData.endDate,
-        authors: commitData.authors,
-      },
-    });
+      const workflowOutput = await start({
+        triggerData: {
+          commitData,
+          title: "What's New",
+          includeStats: true,
+          generateSummary: true,
+        },
+      });
+
+      // Define interfaces for typing
+      interface WorkflowStep {
+        id: string;
+        output: string | null;
+      }
+
+      interface WorkflowOutput {
+        steps?: WorkflowStep[];
+        results?: Record<string, unknown>;
+      }
+
+      // Type assertion for better TypeScript support
+      const typedOutput = workflowOutput as WorkflowOutput;
+
+      console.log(
+        "workflow output structure:",
+        JSON.stringify(
+          {
+            hasSteps: !!typedOutput.steps,
+            stepIds: typedOutput.steps?.map((s: WorkflowStep) => s.id),
+            stepOutputs: typedOutput.steps?.map((s: WorkflowStep) => ({
+              id: s.id,
+              hasOutput: !!s.output,
+            })),
+            hasResults: !!typedOutput.results,
+            resultKeys: typedOutput.results
+              ? Object.keys(typedOutput.results)
+              : [],
+          },
+          null,
+          2,
+        ),
+      );
+
+      // Extract the user-friendly changelog and summary from workflow output
+      let userFriendlyChangelog = "";
+      let summary = "";
+
+      // Try to extract from results first since that's what we're getting
+      if (typedOutput.results) {
+        const rawChangelog = typedOutput.results[
+          "generate-user-friendly-changelog"
+        ] as { status: string; output: string };
+        const rawSummary = typedOutput.results["generate-summary"] as {
+          status: string;
+          output: string;
+        };
+
+        userFriendlyChangelog =
+          rawChangelog?.status === "success" ? rawChangelog.output : "";
+        summary = rawSummary?.status === "success" ? rawSummary.output : "";
+      }
+
+      // Fallback to steps if needed (keeping as backup)
+      if (!userFriendlyChangelog && typedOutput.steps?.length) {
+        const stepChangelog = typedOutput.steps.find(
+          (step: WorkflowStep) =>
+            step.id === "generate-user-friendly-changelog",
+        )?.output;
+
+        const stepSummary = typedOutput.steps.find(
+          (step: WorkflowStep) => step.id === "generate-summary",
+        )?.output;
+
+        userFriendlyChangelog =
+          typeof stepChangelog === "string" ? stepChangelog : "";
+        summary = typeof stepSummary === "string" ? stepSummary : "";
+      }
+
+      console.log("Raw workflow results:", {
+        changelog: typedOutput.results?.["generate-user-friendly-changelog"],
+        summary: typedOutput.results?.["generate-summary"],
+      });
+
+      console.log("Extracted values:", {
+        userFriendlyChangelogLength: userFriendlyChangelog.length,
+        summaryLength: summary.length,
+        firstCharsOfChangelog: userFriendlyChangelog.substring(0, 100),
+      });
+
+      if (!userFriendlyChangelog) {
+        return apiError("Failed to generate changelog content", 500);
+      }
+
+      return apiSuccess({
+        changelog: userFriendlyChangelog,
+        summary: summary,
+        metadata: {
+          commitCount: commitData.commits.length,
+          startDate: commitData.startDate,
+          endDate: commitData.endDate,
+          authors: commitData.authors,
+        },
+      });
+    } catch (workflowError) {
+      console.error("Workflow execution error:", workflowError);
+      return apiError(
+        `Error executing changelog workflow: ${workflowError instanceof Error ? workflowError.message : String(workflowError)}`,
+        500,
+      );
+    }
   } catch (error) {
     console.error("Error generating changelog:", error);
     return apiError(
@@ -280,164 +393,6 @@ async function fetchReleaseForChangelog(
   }
 }
 
-// Generate a changelog for the fallback case
-function generateSimpleChangelog(commitData: CommitData): string {
-  return generateChangelogWithLLM(commitData.commits, "What's New");
-}
-
-// Unified function to generate changelog with LLM
-function generateChangelogWithLLM(commits: Commit[], title: string): string {
-  // If we have no commits, return a simple message
-  if (!commits || commits.length === 0) {
-    return `# ${title}\n\nNo changes to report in this update.`;
-  }
-
-  try {
-    // The commitMessages variable is not used, so we can remove it
-    // or comment it out if it might be needed in the future
-    /* 
-    const commitMessages = commits
-      .map((commit) => {
-        if (typeof commit === "string") return commit;
-        if (commit && typeof commit === "object") {
-    */
-
-    // For now, return a Twilio-styled changelog using the available commit data
-    // This is a temporary solution until the LLM integration is fully implemented
-    return createTwilioStyleChangelog(commits, title);
-  } catch (error) {
-    console.error("Error generating changelog with LLM:", error);
-    return `# ${title}\n\nWe've made various improvements to enhance your experience.\n\nThank you for using our product.`;
-  }
-}
-
-// Temporary function to create a more user-focused changelog until LLM integration is complete
-function createTwilioStyleChangelog(commits: Commit[], title: string): string {
-  // Extract meaningful messages
-  const meaningfulMessages = commits
-    .map((commit) => {
-      if (typeof commit === "string") return commit;
-      return commit?.message || "";
-    })
-    .filter(
-      (message) =>
-        message &&
-        !message.toLowerCase().includes("merge ") &&
-        !message.toLowerCase().match(/^wip\b/i),
-    );
-
-  // Start with a simple title that includes commit references if available
-  let changelog = `# ${title}\n\n`;
-
-  // Group commits by category (crude implementation without LLM)
-  const featureCommits = meaningfulMessages.filter(
-    (msg) =>
-      msg.toLowerCase().includes("feat") ||
-      msg.toLowerCase().includes("add") ||
-      msg.toLowerCase().includes("implement"),
-  );
-
-  const fixCommits = meaningfulMessages.filter(
-    (msg) =>
-      msg.toLowerCase().includes("fix") ||
-      msg.toLowerCase().includes("bug") ||
-      msg.toLowerCase().includes("resolve"),
-  );
-
-  const enhancementCommits = meaningfulMessages.filter(
-    (msg) =>
-      msg.toLowerCase().includes("improve") ||
-      msg.toLowerCase().includes("update") ||
-      msg.toLowerCase().includes("enhance") ||
-      msg.toLowerCase().includes("optimiz"),
-  );
-
-  const otherCommits = meaningfulMessages.filter(
-    (msg) =>
-      !featureCommits.includes(msg) &&
-      !fixCommits.includes(msg) &&
-      !enhancementCommits.includes(msg),
-  );
-
-  // Add feature section if there are features
-  if (featureCommits.length > 0) {
-    changelog += `## New Features\n\n`;
-    featureCommits.forEach((message) => {
-      const formattedMessage = formatCommitMessage(message);
-      changelog += `- ${formattedMessage}\n`;
-    });
-    changelog += `\n`;
-  }
-
-  // Add fixes section if there are fixes
-  if (fixCommits.length > 0) {
-    changelog += `## Bug Fixes\n\n`;
-    fixCommits.forEach((message) => {
-      const formattedMessage = formatCommitMessage(message);
-      changelog += `- ${formattedMessage}\n`;
-    });
-    changelog += `\n`;
-  }
-
-  // Add enhancements section if there are enhancements
-  if (enhancementCommits.length > 0) {
-    changelog += `## Improvements\n\n`;
-    enhancementCommits.forEach((message) => {
-      const formattedMessage = formatCommitMessage(message);
-      changelog += `- ${formattedMessage}\n`;
-    });
-    changelog += `\n`;
-  }
-
-  // Add other changes if there are any
-  if (otherCommits.length > 0) {
-    changelog += `## Other Changes\n\n`;
-    otherCommits.forEach((message) => {
-      const formattedMessage = formatCommitMessage(message);
-      changelog += `- ${formattedMessage}\n`;
-    });
-    changelog += `\n`;
-  }
-
-  return changelog;
-}
-
-// Helper function to format commit messages
-function formatCommitMessage(message: string): string {
-  let formattedMessage = message.trim();
-
-  // Extract PR number if present
-  const prMatch = formattedMessage.match(/#(\d+)/);
-  const prNumber = prMatch ? prMatch[1] : null;
-
-  // Clean up common prefixes
-  formattedMessage = formattedMessage
-    .replace(/^feat(\([^)]+\))?:\s*/i, "")
-    .replace(/^fix(\([^)]+\))?:\s*/i, "")
-    .replace(/^chore(\([^)]+\))?:\s*/i, "")
-    .replace(/^docs(\([^)]+\))?:\s*/i, "")
-    .replace(/^style(\([^)]+\))?:\s*/i, "")
-    .replace(/^refactor(\([^)]+\))?:\s*/i, "")
-    .replace(/^test(\([^)]+\))?:\s*/i, "")
-    .replace(/^build(\([^)]+\))?:\s*/i, "");
-
-  // Capitalize first letter
-  formattedMessage =
-    formattedMessage.charAt(0).toUpperCase() + formattedMessage.slice(1);
-
-  // Add period if needed
-  if (!formattedMessage.endsWith(".")) {
-    formattedMessage += ".";
-  }
-
-  // Add PR reference if available
-  if (prNumber) {
-    formattedMessage += ` (PR #${prNumber})`;
-  }
-
-  return formattedMessage;
-}
-
 async function fetchSingleCommit(
   project: Project,
   commitHash: string,
@@ -572,73 +527,70 @@ async function fetchReleaseRangeForChangelog(
 
     const octokit = createGitHubClient(project.accessToken || undefined);
 
-    // Get all releases to determine their order
-    const releases = await octokit.repos.listReleases({
-      owner: repoOwner,
-      repo: repoName,
-      per_page: 100,
-    });
+    // Instead of using releases, we'll work directly with Git tags
+    // First, let's check if both tags exist
+    try {
+      // Check if start tag exists
+      await octokit.git.getRef({
+        owner: repoOwner,
+        repo: repoName,
+        ref: `tags/${startReleaseTag}`,
+      });
 
-    // Find the indices of the start and end release tags
-    const releaseList = releases.data;
-    const startReleaseIndex = releaseList.findIndex(
-      (r: { tag_name: string }) => r.tag_name === startReleaseTag,
-    );
-    const endReleaseIndex = releaseList.findIndex(
-      (r: { tag_name: string }) => r.tag_name === endReleaseTag,
-    );
-
-    if (startReleaseIndex === -1) {
-      throw new Error(`Start release tag '${startReleaseTag}' not found`);
-    }
-    if (endReleaseIndex === -1) {
-      throw new Error(`End release tag '${endReleaseTag}' not found`);
-    }
-
-    // Ensure start is before end (or same) in the releases list (note: GitHub orders releases newest first)
-    if (startReleaseIndex < endReleaseIndex) {
-      throw new Error(
-        "Start release must be older than or equal to end release",
-      );
-    }
-
-    // Get the release tags in the range (inclusive)
-    const releaseTags = releaseList
-      .slice(endReleaseIndex, startReleaseIndex + 1)
-      .map((r: { tag_name: string }) => r.tag_name);
-
-    // Fetch commits for each release in the range
-    const allCommits: Commit[] = [];
-    for (const tag of releaseTags) {
-      try {
-        const releaseCommits = await fetchRelCommits(
-          repoOwner,
-          repoName,
-          tag,
-          project.accessToken || undefined,
-        );
-        allCommits.push(...releaseCommits);
-      } catch (error) {
-        console.warn(`Failed to fetch commits for release ${tag}:`, error);
-        // Continue with other releases even if one fails
+      // Check if end tag exists
+      await octokit.git.getRef({
+        owner: repoOwner,
+        repo: repoName,
+        ref: `tags/${endReleaseTag}`,
+      });
+    } catch (error) {
+      // Handle tag not found
+      console.error("Error verifying tags:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("Not Found")) {
+        if (errorMessage.includes(startReleaseTag)) {
+          throw new Error(
+            `Start release tag '${startReleaseTag}' not found in repository`,
+          );
+        } else if (errorMessage.includes(endReleaseTag)) {
+          throw new Error(
+            `End release tag '${endReleaseTag}' not found in repository`,
+          );
+        } else {
+          throw new Error(
+            `One or both release tags not found: ${startReleaseTag}, ${endReleaseTag}`,
+          );
+        }
       }
+      throw error;
     }
 
-    if (allCommits.length === 0) {
+    // Since both tags exist, just use them with fetchCommitsBetweenRefs
+    // This treats the tags just like any other git reference
+    const commits = await fetchCommitsBetweenRefs(
+      repoOwner,
+      repoName,
+      startReleaseTag,
+      endReleaseTag,
+      project.accessToken || undefined,
+    );
+
+    if (commits.length === 0) {
       throw new Error(
-        `No commits found for release range ${startReleaseTag}-${endReleaseTag}`,
+        `No commits found between tags ${startReleaseTag} and ${endReleaseTag}`,
       );
     }
 
     // Find earliest and latest dates
-    const dates = allCommits.map((c) => new Date(c.date).getTime());
+    const dates = commits.map((c) => new Date(c.date).getTime());
     const startDate = new Date(Math.min(...dates)).toISOString();
     const endDate = new Date(Math.max(...dates)).toISOString();
 
     // Get unique authors
-    const authors = [...new Set(allCommits.map((c) => c.author))];
+    const authors = [...new Set(commits.map((c) => c.author))];
 
-    return { commits: allCommits, startDate, endDate, authors };
+    return { commits, startDate, endDate, authors };
   } catch (error) {
     console.error("Error fetching release range commits:", error);
     throw new Error(
