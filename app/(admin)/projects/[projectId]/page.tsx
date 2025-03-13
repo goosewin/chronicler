@@ -13,6 +13,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Github, MoreVertical, Pencil, Trash2, User } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -163,10 +171,51 @@ export default function ProjectPage({
     <div className="container py-8">
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle>{project.name}</CardTitle>
-          {project.description && (
-            <CardDescription>{project.description}</CardDescription>
-          )}
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{project.name}</CardTitle>
+              {project.description && (
+                <CardDescription>{project.description}</CardDescription>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Link href={`/view/projects/${project.id}`}>
+                <Button variant="outline" className="gap-2">
+                  <User className="h-4 w-4" />
+                  View as Guest
+                </Button>
+              </Link>
+              <Link href={project.repositoryUrl} target="_blank">
+                <Button variant="outline" className="gap-2">
+                  <Github className="h-4 w-4" />
+                  Repository
+                </Button>
+              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <span className="sr-only">More actions</span>
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <Link href={`/projects/${project.id}/edit`}>
+                    <DropdownMenuItem>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit project
+                    </DropdownMenuItem>
+                  </Link>
+                  <DropdownMenuSeparator />
+                  <Link href={`/projects/${project.id}/delete`}>
+                    <DropdownMenuItem className="text-destructive">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete project
+                    </DropdownMenuItem>
+                  </Link>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="grid gap-6">
           <div className="space-y-1">
@@ -182,14 +231,6 @@ export default function ProjectPage({
               >
                 {project.repositoryUrl}
               </Link>
-            </p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">
-              Visibility
-            </p>
-            <p className="font-medium">
-              {project.isPublic ? "Public" : "Private"}
             </p>
           </div>
         </CardContent>

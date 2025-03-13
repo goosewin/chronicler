@@ -13,7 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Settings } from "lucide-react";
+import { useUser } from "@/lib/hooks";
+import { Github, Settings } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -44,7 +45,7 @@ export default function PublicProjectPage({
   const [project, setProject] = useState<Project | null>(null);
   const [changelogs, setChangelogs] = useState<Changelog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasAccess, setHasAccess] = useState(false);
+  const user = useUser();
   const [filters, setFilters] = useState<Filters>({
     search: "",
     dateRange: undefined,
@@ -63,7 +64,6 @@ export default function PublicProjectPage({
         }
         const projectData = await projectResponse.json();
         setProject(projectData.project);
-        setHasAccess(projectData.hasAccess);
 
         // Fetch changelogs
         const changelogsResponse = await fetch(
@@ -153,23 +153,34 @@ export default function PublicProjectPage({
 
   return (
     <div className="container py-8 max-w-3xl mx-auto">
-      <div className="flex justify-between items-start mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">{project.name}</h1>
-          {project.description && (
-            <p className="text-muted-foreground mt-1">{project.description}</p>
-          )}
-        </div>
-
-        {hasAccess && (
-          <Link href={`/projects/${project.id}`}>
-            <Button variant="outline" size="sm" className="gap-1">
-              <Settings className="h-4 w-4" />
-              View as Admin
-            </Button>
-          </Link>
-        )}
-      </div>
+      <Card className="mb-8">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{project.name}</CardTitle>
+              {project.description && (
+                <CardDescription>{project.description}</CardDescription>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {user.user && (
+                <Link href={`/projects/${project.id}`}>
+                  <Button variant="outline" className="gap-2">
+                    <Settings className="h-4 w-4" />
+                    View as Admin
+                  </Button>
+                </Link>
+              )}
+              <Link href={project.repositoryUrl} target="_blank">
+                <Button variant="outline" className="gap-2">
+                  <Github className="h-4 w-4" />
+                  Repository
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
 
       <div className="mb-6">
         <ChangelogFilters onFiltersChange={setFilters} />
