@@ -136,21 +136,27 @@ const generateUserFriendlyChangelogStep = new Step({
       throw new Error("Required data not found");
     }
 
-    const prompt = `I need you to rewrite this technical changelog into user-friendly language. 
-     Focus on expressing the changes from the user's perspective.
+    const prompt = `Transform this technical changelog into a concise, specific, and user-focused changelog.
      
      Here's the technical changelog:
      
      ${technicalChangelog}
      
-     This changelog covers ${input.commitData.commits.length} commits made between 
+     This changelog covers ${input.commitData.commits.length} commits between 
      ${new Date(input.commitData.startDate).toLocaleDateString()} and 
      ${new Date(input.commitData.endDate).toLocaleDateString()}.
      
      Contributors: ${input.commitData.authors.join(", ")}
      
-     Please rewrite this changelog to be more user-friendly while maintaining the 
-     same structure and information.`;
+     Format your response as follows:
+     1. Title: "Changelog: [first 8 chars of startRef] to [first 8 chars of endRef]"
+     2. Organize changes by user impact, not by commit type
+     3. Use specific headings that describe the actual changes (not generic categories)
+     4. For each change, describe concrete user benefits and improvements
+     5. Include PR/issue numbers as references where available
+     6. Skip generic phrases like "We're pleased to announce" or "Thank you for using"
+     7. Don't add filler text about "throughout the system" or "various improvements"
+     8. List contributors at the end`;
 
     const response = await changelogAgent.stream([
       {
