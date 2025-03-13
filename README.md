@@ -2,9 +2,7 @@
 
 > AI-powered changelog generator
 
-Chronicler is a modern changelog management system that automatically generates user-friendly changelogs from your Git commits. It uses AI to transform technical commit messages into clear, meaningful changelog entries that your users will actually understand.
-
-![Chronicler Screenshot](docs/screenshot.png)
+Chronicler is a modern changelog management system that helps automate the creation of user-friendly changelogs from your Git commits. It uses AI to transform technical commit messages into clear, meaningful changelog entries that your users will actually understand.
 
 ## Features
 
