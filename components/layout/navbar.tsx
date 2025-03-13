@@ -12,10 +12,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSession } from "@/lib/providers/session-provider";
-import { Home, Layers, LogOut } from "lucide-react";
+import { Computer, Home, Layers, LogOut } from "lucide-react";
 import Link from "next/link";
 
-export default function Navbar() {
+export default function Navbar({
+  isAdminView = false,
+}: {
+  isAdminView?: boolean;
+}) {
   const { user, logout, isLoading } = useSession();
 
   return (
@@ -24,6 +28,11 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-2">
           <Layers className="h-5 w-5 text-primary" />
           <span className="font-bold text-xl">Chronicler</span>
+          {isAdminView && (
+            <span className="ml-2 text-xs rounded-full bg-primary/10 text-primary px-2 py-1">
+              Admin
+            </span>
+          )}
         </Link>
 
         <div className="ml-auto flex items-center gap-4">
@@ -33,16 +42,29 @@ export default function Navbar() {
             <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
           ) : user ? (
             <>
-              <Link href="/">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="hidden md:flex gap-2"
-                >
-                  <Home className="h-4 w-4" />
-                  View Changelogs
-                </Button>
-              </Link>
+              {isAdminView ? (
+                <Link href="/">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hidden md:flex gap-2"
+                  >
+                    <Home className="h-4 w-4" />
+                    Public Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/dashboard">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hidden md:flex gap-2"
+                  >
+                    <Computer className="h-4 w-4" />
+                    Admin Dashboard
+                  </Button>
+                </Link>
+              )}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

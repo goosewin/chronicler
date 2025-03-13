@@ -7,9 +7,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProjectsInteractor } from "@/lib/interactors";
-import { ArrowLeft, FileText } from "lucide-react";
+import {
+  ArrowLeft,
+  ExternalLink,
+  FileText,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -61,10 +66,33 @@ export default async function ProjectPage({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {project.isPublic && (
+            <Link href={`/view/projects/${project.id}`}>
+              <Button variant="outline" className="gap-2">
+                <ExternalLink className="h-4 w-4" />
+                View as Guest
+              </Button>
+            </Link>
+          )}
           <Link href={`/projects/${project.id}/changelog`}>
             <Button className="gap-2">
               <FileText className="h-4 w-4" />
               New Changelog
+            </Button>
+          </Link>
+          <Link href={`/projects/${project.id}/edit`}>
+            <Button variant="outline" className="gap-2">
+              <Pencil className="h-4 w-4" />
+              Edit Project
+            </Button>
+          </Link>
+          <Link href={`/projects/${project.id}/delete`}>
+            <Button
+              variant="outline"
+              className="gap-2 text-destructive hover:text-destructive border-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Project
             </Button>
           </Link>
         </div>
@@ -139,51 +167,24 @@ export default async function ProjectPage({
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="changelogs">
-          <TabsList>
-            <TabsTrigger value="changelogs">Changelogs</TabsTrigger>
-            <TabsTrigger value="activity">Activity</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
-          <TabsContent value="changelogs" className="space-y-4 mt-6">
-            <h2 className="text-xl font-semibold">Recent Changelogs</h2>
-            {changelogs.length === 0 ? (
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-center text-muted-foreground">
-                    No changelogs have been created yet.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {changelogs.map((changelog) => (
-                  <ChangelogCard key={changelog.id} changelog={changelog} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-          <TabsContent value="activity" className="space-y-4 mt-6">
-            <h2 className="text-xl font-semibold">Recent Activity</h2>
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Recent Changelogs</h2>
+          {changelogs.length === 0 ? (
             <Card>
               <CardContent className="pt-6">
                 <p className="text-center text-muted-foreground">
-                  No recent activity to display.
+                  No changelogs have been created yet.
                 </p>
               </CardContent>
             </Card>
-          </TabsContent>
-          <TabsContent value="settings" className="space-y-4 mt-6">
-            <h2 className="text-xl font-semibold">Project Settings</h2>
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-muted-foreground">
-                  Project settings will be implemented in a future update.
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          ) : (
+            <div className="space-y-4">
+              {changelogs.map((changelog) => (
+                <ChangelogCard key={changelog.id} changelog={changelog} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

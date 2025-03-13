@@ -1,4 +1,5 @@
 import { MarkdownContent } from "@/components/markdown-content";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -6,8 +7,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { auth } from "@/lib/auth";
 import { ProjectsInteractor } from "@/lib/interactors/projects";
-import { Calendar, GitBranch } from "lucide-react";
+import { Calendar, GitBranch, Settings } from "lucide-react";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -23,6 +26,39 @@ async function getProjectData(projectId: string) {
   return project;
 }
 
+async function getUserAccess(projectId: string) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { hasAccess: false };
+    }
+
+    // Check if the user is the owner or a collaborator of this project
+    const project = await ProjectsInteractor.getById(projectId);
+
+    if (!project) {
+      return { hasAccess: false };
+    }
+
+    const hasAccess =
+      project.userId === session.user.id ||
+      (await ProjectsInteractor.getCollaborations(session.user.id)).some(
+        (p) => p.id === projectId,
+      );
+
+    return {
+      hasAccess,
+      userId: session.user.id,
+    };
+  } catch (error) {
+    console.error("Error checking user access:", error);
+    return { hasAccess: false };
+  }
+}
+
 export default async function PublicProjectPage({
   params,
 }: {
@@ -30,6 +66,7 @@ export default async function PublicProjectPage({
 }) {
   const { projectId } = await params;
   const project = await getProjectData(projectId);
+  const { hasAccess } = await getUserAccess(projectId);
 
   if (!project) {
     notFound();
@@ -49,28 +86,41 @@ export default async function PublicProjectPage({
   return (
     <div className="container py-8 max-w-5xl mx-auto">
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold">{project.name}</h1>
-          {project.description && (
-            <p className="text-muted-foreground mt-2">{project.description}</p>
-          )}
-          <div className="flex flex-wrap gap-4 mt-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              <span>Last updated: {formattedDate}</span>
-            </div>
-            {project.repositoryUrl && (
-              <Link
-                href={project.repositoryUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
-              >
-                <GitBranch className="h-4 w-4" />
-                <span>View Repository</span>
-              </Link>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold">{project.name}</h1>
+            {project.description && (
+              <p className="text-muted-foreground mt-2">
+                {project.description}
+              </p>
             )}
+            <div className="flex flex-wrap gap-4 mt-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                <span>Last updated: {formattedDate}</span>
+              </div>
+              {project.repositoryUrl && (
+                <Link
+                  href={project.repositoryUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
+                >
+                  <GitBranch className="h-4 w-4" />
+                  <span>View Repository</span>
+                </Link>
+              )}
+            </div>
           </div>
+
+          {hasAccess && (
+            <Link href={`/projects/${projectId}`}>
+              <Button variant="outline" size="sm" className="gap-1">
+                <Settings className="h-4 w-4" />
+                View as Admin
+              </Button>
+            </Link>
+          )}
         </div>
 
         {changelogs.length === 0 ? (

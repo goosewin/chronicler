@@ -1,6 +1,9 @@
 "use client";
 
-import { ChangelogGenerator } from "@/components/changelog-generator";
+import {
+  ChangelogGenerator,
+  GenerationMetadata,
+} from "@/components/changelog-generator";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -26,7 +29,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Project } from "@/lib/db/types";
 import { cn } from "@/lib/utils";
@@ -44,9 +46,16 @@ const formSchema = z.object({
   version: z.string().min(1, { message: "Version is required" }),
   releaseDate: z.string().min(1, { message: "Release date is required" }),
   content: z.string().min(1, { message: "Content is required" }),
-  commitHash: z.string().optional(),
-  isPublished: z.boolean().default(true),
   projectId: z.string().min(1, { message: "Project ID is required" }),
+  generationMetadata: z
+    .object({
+      source: z.string(),
+      startRef: z.string().optional(),
+      endRef: z.string().optional(),
+      prNumber: z.string().optional(),
+      releaseTag: z.string().optional(),
+    })
+    .optional(),
 });
 
 export default function NewChangelogPage({
@@ -68,8 +77,6 @@ export default function NewChangelogPage({
       version: "",
       releaseDate: new Date().toISOString(),
       content: "",
-      commitHash: "",
-      isPublished: true,
       projectId: projectId,
     },
   });
@@ -144,8 +151,14 @@ export default function NewChangelogPage({
     }
   };
 
-  const handleGeneratedChangelog = (content: string) => {
+  const handleGeneratedChangelog = (
+    content: string,
+    metadata?: GenerationMetadata,
+  ) => {
     form.setValue("content", content);
+    if (metadata) {
+      form.setValue("generationMetadata", metadata);
+    }
     setShowGenerator(false);
     toast.success("Changelog content has been added to the form");
   };
@@ -250,26 +263,6 @@ export default function NewChangelogPage({
 
                   <FormField
                     control={form.control}
-                    name="commitHash"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Commit Hash (Optional)</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="git commit hash or tag"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Git commit hash, tag, or reference for this release
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
                     name="content"
                     render={({ field }) => (
                       <FormItem>
@@ -311,27 +304,6 @@ export default function NewChangelogPage({
                           Full changelog content in Markdown format
                         </FormDescription>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="isPublished"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <div className="space-y-0.5">
-                          <FormLabel>Publish Changelog</FormLabel>
-                          <FormDescription>
-                            Make this changelog visible to all users
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
                       </FormItem>
                     )}
                   />

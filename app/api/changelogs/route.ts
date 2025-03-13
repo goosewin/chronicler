@@ -37,12 +37,7 @@ export async function GET(request: NextRequest) {
       return accessResult.error;
     }
 
-    const includeUnpublished = userId != null;
-
-    const changelogs = await ChangelogsInteractor.getByProjectId(
-      projectId,
-      includeUnpublished,
-    );
+    const changelogs = await ChangelogsInteractor.getByProjectId(projectId);
 
     const paginatedChangelogs = changelogs.slice(offset, offset + limit);
 
@@ -91,13 +86,25 @@ export async function POST(request: NextRequest) {
       return apiError("Unauthorized", 401);
     }
 
+    // Extract generation metadata if present
+    const generationMetadata = body.generationMetadata
+      ? {
+          source: body.generationMetadata.source,
+          startRef: body.generationMetadata.startRef,
+          endRef: body.generationMetadata.endRef,
+          prNumber: body.generationMetadata.prNumber,
+          releaseTag: body.generationMetadata.releaseTag,
+          generatedAt: new Date().toISOString(),
+        }
+      : null;
+
     const changelogData = {
       version: body.version,
       releaseDate,
       content: body.content,
-      commitHash: body.commitHash || null,
-      isPublished: body.isPublished === false ? false : true,
+      isPublished: true,
       projectId: body.projectId,
+      metadata: generationMetadata ? { generation: generationMetadata } : null,
     };
 
     const changelog = await ChangelogsInteractor.create(changelogData);

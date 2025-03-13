@@ -40,7 +40,6 @@ interface ChangelogCardProps {
     version: string;
     releaseDate: Date | string;
     content: string;
-    isPublished: boolean;
     projectId: string;
     projectName?: string;
     project?: { name: string };
@@ -106,11 +105,6 @@ export function ChangelogCard({ changelog }: ChangelogCardProps) {
                 >
                   {changelog.version}
                 </Link>
-                {!changelog.isPublished && (
-                  <span className="ml-2 text-xs bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded">
-                    Draft
-                  </span>
-                )}
               </CardTitle>
               <CardDescription>
                 {projectName && (

@@ -1,5 +1,5 @@
+import Navbar from "@/components/layout/navbar";
 import { MarkdownContent } from "@/components/markdown-content";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -18,22 +18,7 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Layers className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold">Chronicler</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link href="/login">
-              <Button variant="outline">Log in</Button>
-            </Link>
-            <Link href="/login?signup=true">
-              <Button>Sign up</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Navbar isAdminView={false} />
       <main className="flex-1">
         <section className="py-20 md:py-32 bg-slate-150 dark:bg-zinc-950/30">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl flex flex-col items-center text-center">

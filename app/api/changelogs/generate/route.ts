@@ -1,5 +1,6 @@
 import { checkProjectAccess, requireAuth } from "@/lib/auth/utils";
 import { Project } from "@/lib/db/types";
+import { createGitHubClient } from "@/lib/github/client";
 import {
   Commit,
   fetchCommitsBetweenRefs,
@@ -7,7 +8,6 @@ import {
 } from "@/lib/github/commits";
 import { fetchPullRequestCommits as fetchPRCommits } from "@/lib/github/pull-requests";
 import { fetchReleaseCommits as fetchRelCommits } from "@/lib/github/releases";
-import { changelogWorkflow } from "@/lib/mastra/workflows/changelog-workflow";
 import { apiError, apiSuccess } from "@/lib/utils";
 import { NextRequest } from "next/server";
 
@@ -31,8 +31,12 @@ export async function POST(request: NextRequest) {
       endRef,
       type,
       prNumber,
+      startPRNumber,
+      endPRNumber,
       releaseTag,
-      generateSummary = false,
+      startReleaseTag,
+      endReleaseTag,
+      commitHash,
     } = body;
 
     if (!projectId) {
@@ -63,11 +67,32 @@ export async function POST(request: NextRequest) {
         commitData = await fetchCommitRange(project, startRef, endRef);
         break;
 
+      case "single_commit":
+        if (!commitHash) {
+          return apiError("Commit hash is required for single commit", 400);
+        }
+        commitData = await fetchSingleCommit(project, commitHash);
+        break;
+
       case "pull_request":
         if (!prNumber) {
           return apiError("PR number is required for pull request", 400);
         }
         commitData = await fetchPRForChangelog(project, prNumber);
+        break;
+
+      case "pr_range":
+        if (!startPRNumber || !endPRNumber) {
+          return apiError(
+            "Start and end PR numbers are required for PR range",
+            400,
+          );
+        }
+        commitData = await fetchPRRangeForChangelog(
+          project,
+          startPRNumber,
+          endPRNumber,
+        );
         break;
 
       case "release":
@@ -77,140 +102,45 @@ export async function POST(request: NextRequest) {
         commitData = await fetchReleaseForChangelog(project, releaseTag);
         break;
 
-      default:
-        return apiError("Invalid generation type", 400);
-    }
-
-    if (!commitData) {
-      return apiError("Failed to retrieve commit data", 500);
-    }
-
-    // Generate a title based on the type of changelog
-    const title =
-      type === "release"
-        ? `Release ${releaseTag}`
-        : type === "pull_request"
-          ? `Pull Request #${prNumber}`
-          : `Changelog ${startRef} to ${endRef}`;
-
-    try {
-      // Create a run for the workflow
-      const { runId, start } = changelogWorkflow.createRun();
-
-      // Start the workflow execution with type assertion to handle the result
-      const result = await start({
-        triggerData: {
-          commitData,
-          title,
-          includeStats: true,
-          generateSummary,
-        },
-      });
-
-      console.log(`Workflow run completed with ID: ${runId}`);
-
-      // The workflow result has a different structure than expected
-      const workflowResult = result as {
-        results?: {
-          "analyze-commits"?: {
-            status: string;
-            output?: {
-              categories?: Record<string, Commit[]>;
-            };
-          };
-        };
-        steps?: {
-          "generate-user-friendly-changelog"?: {
-            result?: string;
-          };
-          "generate-summary"?: {
-            result?: string;
-          };
-        };
-        changelog?: string;
-        summary?: string;
-        metadata?: Record<string, unknown>;
-      };
-
-      // Check if the workflow had a successful result
-      let userFriendlyChangelog = "No changelog generated";
-      let summary = null;
-
-      // If generate-technical-changelog failed but analyze-commits succeeded,
-      // we can generate a basic changelog from the analyze-commits data
-      if (
-        workflowResult.results &&
-        workflowResult.results["analyze-commits"] &&
-        workflowResult.results["analyze-commits"].status === "success"
-      ) {
-        // Get the commit categories from the analyze step
-        const analyzeResult = workflowResult.results["analyze-commits"].output;
-
-        if (analyzeResult && analyzeResult.categories) {
-          // Generate a simple changelog from the categories
-          userFriendlyChangelog = generateChangelogFromCategories(
-            analyzeResult.categories,
-            title,
+      case "release_range":
+        if (!startReleaseTag || !endReleaseTag) {
+          return apiError(
+            "Start and end release tags are required for release range",
+            400,
           );
         }
-      } else if (
-        workflowResult.steps &&
-        workflowResult.steps["generate-user-friendly-changelog"]
-      ) {
-        // If we have a user-friendly changelog from the workflow, use that
-        userFriendlyChangelog =
-          workflowResult.steps["generate-user-friendly-changelog"].result ||
-          userFriendlyChangelog;
-        summary = workflowResult.steps["generate-summary"]?.result || null;
-      }
+        commitData = await fetchReleaseRangeForChangelog(
+          project,
+          startReleaseTag,
+          endReleaseTag,
+        );
+        break;
 
-      // Return the generated changelog
-      const responseData = {
-        changelog: userFriendlyChangelog,
-        summary: summary,
-        runId,
-        metadata: {
-          type,
-          commitData: {
-            count: commitData.commits.length,
-            startDate: commitData.startDate,
-            endDate: commitData.endDate,
-            authors: commitData.authors,
-          },
-          // Add workflow metadata if available
-          ...(workflowResult.metadata || {}),
-        },
-      };
-
-      // The apiSuccess function returns the data directly, not wrapped in another object
-      return apiSuccess(responseData);
-    } catch (workflowError) {
-      console.error("Error executing Mastra workflow:", workflowError);
-
-      // Fallback to simple changelog generation if Mastra workflow fails
-      const simpleChangelog = generateSimpleChangelog(commitData);
-
-      const fallbackResponse = {
-        changelog: simpleChangelog,
-        summary: null,
-        runId: "fallback",
-        metadata: {
-          type,
-          commitData: {
-            count: commitData.commits.length,
-            startDate: commitData.startDate,
-            endDate: commitData.endDate,
-            authors: commitData.authors,
-          },
-          fallback: true,
-        },
-      };
-
-      return apiSuccess(fallbackResponse);
+      default:
+        return apiError(`Unknown generation type: ${type}`, 400);
     }
+
+    if (!commitData || !commitData.commits || commitData.commits.length === 0) {
+      return apiError("No commits found for the specified criteria", 404);
+    }
+
+    // Generate the changelog (using simplified approach for now)
+    const changelog = generateSimpleChangelog(commitData);
+
+    return apiSuccess({
+      changelog,
+      metadata: {
+        commitCount: commitData.commits.length,
+        startDate: commitData.startDate,
+        endDate: commitData.endDate,
+        authors: commitData.authors,
+      },
+    });
   } catch (error) {
     console.error("Error generating changelog:", error);
-    return apiError("Failed to generate changelog");
+    return apiError(
+      `Failed to generate changelog: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -350,41 +280,6 @@ async function fetchReleaseForChangelog(
   }
 }
 
-// Helper function to generate a changelog from categorized commits
-function generateChangelogFromCategories(
-  categories: Record<string, Commit[]>,
-  title: string,
-): string {
-  // Get all commits from all categories
-  const allCommits: Commit[] = [];
-
-  // Collect commits from each category
-  for (const [category, commits] of Object.entries(categories)) {
-    if (Array.isArray(commits) && commits.length > 0) {
-      // Add category context to each commit
-      const categorizedCommits = commits.map((commit) => {
-        if (typeof commit === "object" && commit.message) {
-          // Create a new object with the correct Commit properties
-          // plus an additional category property
-          return {
-            hash: commit.hash || "",
-            message: commit.message,
-            author: commit.author || "",
-            date: commit.date || "",
-            category,
-          } as Commit & { category: string };
-        }
-        return commit;
-      });
-
-      allCommits.push(...categorizedCommits);
-    }
-  }
-
-  // Use the LLM to generate the changelog
-  return generateChangelogWithLLM(allCommits, title);
-}
-
 // Generate a changelog for the fallback case
 function generateSimpleChangelog(commitData: CommitData): string {
   return generateChangelogWithLLM(commitData.commits, "What's New");
@@ -416,11 +311,8 @@ function generateChangelogWithLLM(commits: Commit[], title: string): string {
   }
 }
 
-// Temporary function to create a Twilio-style changelog until LLM integration is complete
-// This should be replaced with actual LLM calls in production
+// Temporary function to create a more user-focused changelog until LLM integration is complete
 function createTwilioStyleChangelog(commits: Commit[], title: string): string {
-  const isRelease = title.toLowerCase().includes("release");
-
   // Extract meaningful messages
   const meaningfulMessages = commits
     .map((commit) => {
@@ -434,37 +326,323 @@ function createTwilioStyleChangelog(commits: Commit[], title: string): string {
         !message.toLowerCase().match(/^wip\b/i),
     );
 
-  // Start with title and intro
+  // Start with a simple title that includes commit references if available
   let changelog = `# ${title}\n\n`;
 
-  if (isRelease) {
-    changelog += `We're excited to announce that ${title} is now available. This release includes:\n\n`;
-  } else {
-    changelog += `We're pleased to announce the following updates and improvements:\n\n`;
+  // Group commits by category (crude implementation without LLM)
+  const featureCommits = meaningfulMessages.filter(
+    (msg) =>
+      msg.toLowerCase().includes("feat") ||
+      msg.toLowerCase().includes("add") ||
+      msg.toLowerCase().includes("implement"),
+  );
+
+  const fixCommits = meaningfulMessages.filter(
+    (msg) =>
+      msg.toLowerCase().includes("fix") ||
+      msg.toLowerCase().includes("bug") ||
+      msg.toLowerCase().includes("resolve"),
+  );
+
+  const enhancementCommits = meaningfulMessages.filter(
+    (msg) =>
+      msg.toLowerCase().includes("improve") ||
+      msg.toLowerCase().includes("update") ||
+      msg.toLowerCase().includes("enhance") ||
+      msg.toLowerCase().includes("optimiz"),
+  );
+
+  const otherCommits = meaningfulMessages.filter(
+    (msg) =>
+      !featureCommits.includes(msg) &&
+      !fixCommits.includes(msg) &&
+      !enhancementCommits.includes(msg),
+  );
+
+  // Add feature section if there are features
+  if (featureCommits.length > 0) {
+    changelog += `## New Features\n\n`;
+    featureCommits.forEach((message) => {
+      const formattedMessage = formatCommitMessage(message);
+      changelog += `- ${formattedMessage}\n`;
+    });
+    changelog += `\n`;
   }
 
-  // Add a few key highlights in paragraph form if available
-  // This simulates what a good LLM would do - extract the most important changes
-  const highlightCount = Math.min(3, meaningfulMessages.length);
-  for (let i = 0; i < highlightCount; i++) {
-    const message = meaningfulMessages[i];
-    // Format as a full sentence
-    let formattedMessage = message.trim();
-    if (!formattedMessage.endsWith(".")) {
-      formattedMessage += ".";
-    }
-
-    // Capitalize first letter
-    formattedMessage =
-      formattedMessage.charAt(0).toUpperCase() + formattedMessage.slice(1);
-
-    // Add to changelog
-    changelog += `${formattedMessage}\n\n`;
+  // Add fixes section if there are fixes
+  if (fixCommits.length > 0) {
+    changelog += `## Bug Fixes\n\n`;
+    fixCommits.forEach((message) => {
+      const formattedMessage = formatCommitMessage(message);
+      changelog += `- ${formattedMessage}\n`;
+    });
+    changelog += `\n`;
   }
 
-  // Add a closing note
-  changelog += `Throughout the system, you'll find feature and UI enhancements, bug fixes, and more.\n\n`;
-  changelog += `Thank you for using our product.`;
+  // Add enhancements section if there are enhancements
+  if (enhancementCommits.length > 0) {
+    changelog += `## Improvements\n\n`;
+    enhancementCommits.forEach((message) => {
+      const formattedMessage = formatCommitMessage(message);
+      changelog += `- ${formattedMessage}\n`;
+    });
+    changelog += `\n`;
+  }
+
+  // Add other changes if there are any
+  if (otherCommits.length > 0) {
+    changelog += `## Other Changes\n\n`;
+    otherCommits.forEach((message) => {
+      const formattedMessage = formatCommitMessage(message);
+      changelog += `- ${formattedMessage}\n`;
+    });
+    changelog += `\n`;
+  }
 
   return changelog;
+}
+
+// Helper function to format commit messages
+function formatCommitMessage(message: string): string {
+  let formattedMessage = message.trim();
+
+  // Extract PR number if present
+  const prMatch = formattedMessage.match(/#(\d+)/);
+  const prNumber = prMatch ? prMatch[1] : null;
+
+  // Clean up common prefixes
+  formattedMessage = formattedMessage
+    .replace(/^feat(\([^)]+\))?:\s*/i, "")
+    .replace(/^fix(\([^)]+\))?:\s*/i, "")
+    .replace(/^chore(\([^)]+\))?:\s*/i, "")
+    .replace(/^docs(\([^)]+\))?:\s*/i, "")
+    .replace(/^style(\([^)]+\))?:\s*/i, "")
+    .replace(/^refactor(\([^)]+\))?:\s*/i, "")
+    .replace(/^test(\([^)]+\))?:\s*/i, "")
+    .replace(/^build(\([^)]+\))?:\s*/i, "");
+
+  // Capitalize first letter
+  formattedMessage =
+    formattedMessage.charAt(0).toUpperCase() + formattedMessage.slice(1);
+
+  // Add period if needed
+  if (!formattedMessage.endsWith(".")) {
+    formattedMessage += ".";
+  }
+
+  // Add PR reference if available
+  if (prNumber) {
+    formattedMessage += ` (PR #${prNumber})`;
+  }
+
+  return formattedMessage;
+}
+
+async function fetchSingleCommit(
+  project: Project,
+  commitHash: string,
+): Promise<CommitData> {
+  try {
+    // Parse the repository URL to get owner and repo name
+    const { owner: repoOwner, name: repoName } = await parseRepoDetails(
+      project.repositoryUrl,
+      project.repositoryOwner || "",
+      project.repositoryName || "",
+    );
+
+    const octokit = createGitHubClient(project.accessToken || undefined);
+
+    // Get the single commit
+    const response = await octokit.repos.getCommit({
+      owner: repoOwner,
+      repo: repoName,
+      ref: commitHash,
+    });
+
+    const commit = {
+      hash: response.data.sha,
+      message: response.data.commit.message,
+      author: response.data.commit.author?.name || "Unknown",
+      date: response.data.commit.author?.date || new Date().toISOString(),
+    };
+
+    return {
+      commits: [commit],
+      startDate: commit.date,
+      endDate: commit.date,
+      authors: [commit.author],
+    };
+  } catch (error) {
+    console.error("Error fetching single commit:", error);
+    throw new Error(
+      `Failed to fetch commit ${commitHash}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+async function fetchPRRangeForChangelog(
+  project: Project,
+  startPRNumber: string | number,
+  endPRNumber: string | number,
+): Promise<CommitData> {
+  try {
+    // Parse the repository URL to get owner and repo name
+    const { owner: repoOwner, name: repoName } = await parseRepoDetails(
+      project.repositoryUrl,
+      project.repositoryOwner || "",
+      project.repositoryName || "",
+    );
+
+    // Convert PR numbers to integers
+    const startPRInt =
+      typeof startPRNumber === "string"
+        ? parseInt(startPRNumber, 10)
+        : startPRNumber;
+    const endPRInt =
+      typeof endPRNumber === "string" ? parseInt(endPRNumber, 10) : endPRNumber;
+
+    if (isNaN(startPRInt) || isNaN(endPRInt)) {
+      throw new Error("Invalid PR numbers");
+    }
+
+    if (startPRInt > endPRInt) {
+      throw new Error(
+        "Start PR number must be less than or equal to end PR number",
+      );
+    }
+
+    // Create an array of PR numbers in the range
+    const prNumbers = Array.from(
+      { length: endPRInt - startPRInt + 1 },
+      (_, i) => startPRInt + i,
+    );
+
+    // Fetch commits for each PR in the range
+    const allCommits: Commit[] = [];
+    for (const prNum of prNumbers) {
+      try {
+        const prCommits = await fetchPRCommits(
+          repoOwner,
+          repoName,
+          prNum,
+          project.accessToken || undefined,
+        );
+        allCommits.push(...prCommits);
+      } catch (error) {
+        console.warn(`Failed to fetch commits for PR #${prNum}:`, error);
+        // Continue with other PRs even if one fails
+      }
+    }
+
+    if (allCommits.length === 0) {
+      throw new Error(
+        `No commits found for PR range ${startPRInt}-${endPRInt}`,
+      );
+    }
+
+    // Find earliest and latest dates
+    const dates = allCommits.map((c) => new Date(c.date).getTime());
+    const startDate = new Date(Math.min(...dates)).toISOString();
+    const endDate = new Date(Math.max(...dates)).toISOString();
+
+    // Get unique authors
+    const authors = [...new Set(allCommits.map((c) => c.author))];
+
+    return { commits: allCommits, startDate, endDate, authors };
+  } catch (error) {
+    console.error("Error fetching PR range commits:", error);
+    throw new Error(
+      `Failed to fetch commits for PR range ${startPRNumber}-${endPRNumber}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+async function fetchReleaseRangeForChangelog(
+  project: Project,
+  startReleaseTag: string,
+  endReleaseTag: string,
+): Promise<CommitData> {
+  try {
+    // Parse the repository URL to get owner and repo name
+    const { owner: repoOwner, name: repoName } = await parseRepoDetails(
+      project.repositoryUrl,
+      project.repositoryOwner || "",
+      project.repositoryName || "",
+    );
+
+    const octokit = createGitHubClient(project.accessToken || undefined);
+
+    // Get all releases to determine their order
+    const releases = await octokit.repos.listReleases({
+      owner: repoOwner,
+      repo: repoName,
+      per_page: 100,
+    });
+
+    // Find the indices of the start and end release tags
+    const releaseList = releases.data;
+    const startReleaseIndex = releaseList.findIndex(
+      (r: { tag_name: string }) => r.tag_name === startReleaseTag,
+    );
+    const endReleaseIndex = releaseList.findIndex(
+      (r: { tag_name: string }) => r.tag_name === endReleaseTag,
+    );
+
+    if (startReleaseIndex === -1) {
+      throw new Error(`Start release tag '${startReleaseTag}' not found`);
+    }
+    if (endReleaseIndex === -1) {
+      throw new Error(`End release tag '${endReleaseTag}' not found`);
+    }
+
+    // Ensure start is before end (or same) in the releases list (note: GitHub orders releases newest first)
+    if (startReleaseIndex < endReleaseIndex) {
+      throw new Error(
+        "Start release must be older than or equal to end release",
+      );
+    }
+
+    // Get the release tags in the range (inclusive)
+    const releaseTags = releaseList
+      .slice(endReleaseIndex, startReleaseIndex + 1)
+      .map((r: { tag_name: string }) => r.tag_name);
+
+    // Fetch commits for each release in the range
+    const allCommits: Commit[] = [];
+    for (const tag of releaseTags) {
+      try {
+        const releaseCommits = await fetchRelCommits(
+          repoOwner,
+          repoName,
+          tag,
+          project.accessToken || undefined,
+        );
+        allCommits.push(...releaseCommits);
+      } catch (error) {
+        console.warn(`Failed to fetch commits for release ${tag}:`, error);
+        // Continue with other releases even if one fails
+      }
+    }
+
+    if (allCommits.length === 0) {
+      throw new Error(
+        `No commits found for release range ${startReleaseTag}-${endReleaseTag}`,
+      );
+    }
+
+    // Find earliest and latest dates
+    const dates = allCommits.map((c) => new Date(c.date).getTime());
+    const startDate = new Date(Math.min(...dates)).toISOString();
+    const endDate = new Date(Math.max(...dates)).toISOString();
+
+    // Get unique authors
+    const authors = [...new Set(allCommits.map((c) => c.author))];
+
+    return { commits: allCommits, startDate, endDate, authors };
+  } catch (error) {
+    console.error("Error fetching release range commits:", error);
+    throw new Error(
+      `Failed to fetch commits for release range ${startReleaseTag}-${endReleaseTag}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }

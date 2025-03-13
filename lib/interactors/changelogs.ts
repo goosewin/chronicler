@@ -43,21 +43,11 @@ export const ChangelogsInteractor = {
       project: projectResult,
     };
   },
-  async getByProjectId(
-    projectId: string,
-    includeUnpublished = false,
-  ): Promise<Changelog[]> {
-    const query = includeUnpublished
-      ? eq(changelog.projectId, projectId)
-      : and(
-          eq(changelog.projectId, projectId),
-          eq(changelog.isPublished, true),
-        );
-
+  async getByProjectId(projectId: string): Promise<Changelog[]> {
     return db
       .select()
       .from(changelog)
-      .where(query)
+      .where(eq(changelog.projectId, projectId))
       .orderBy(desc(changelog.releaseDate));
   },
   async update(
@@ -84,7 +74,6 @@ export const ChangelogsInteractor = {
     const changelogs = await db
       .select()
       .from(changelog)
-      .where(eq(changelog.isPublished, true))
       .orderBy(desc(changelog.releaseDate))
       .limit(limit);
 

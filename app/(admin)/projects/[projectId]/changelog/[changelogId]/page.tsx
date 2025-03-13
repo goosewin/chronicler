@@ -15,7 +15,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Calendar, Edit, Tag, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Edit,
+  ExternalLink,
+  Tag,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
@@ -32,6 +39,21 @@ interface Changelog {
   projectId: string;
   createdAt: string;
   updatedAt: string;
+  metadata?: {
+    generation?: {
+      source: string;
+      startRef?: string;
+      endRef?: string;
+      prNumber?: string;
+      releaseTag?: string;
+      generatedAt?: string;
+      commitHash?: string;
+      startPRNumber?: string;
+      endPRNumber?: string;
+      startReleaseTag?: string;
+      endReleaseTag?: string;
+    };
+  };
 }
 
 export default function ChangelogDetailsPage({
@@ -195,6 +217,12 @@ export default function ChangelogDetailsPage({
 
         {changelog && (
           <div className="flex items-center gap-2">
+            <Link href={`/view/projects/${projectId}/changelog/${changelogId}`}>
+              <Button variant="outline" size="sm" className="gap-1">
+                <ExternalLink className="h-4 w-4" />
+                View as Guest
+              </Button>
+            </Link>
             <Link href={`/projects/${projectId}/changelog/${changelogId}/edit`}>
               <Button variant="outline" size="sm" className="gap-1">
                 <Edit className="h-4 w-4" />
@@ -255,6 +283,116 @@ export default function ChangelogDetailsPage({
                 </div>
               )}
             </div>
+
+            {changelog.metadata?.generation && (
+              <div className="bg-muted p-3 rounded-md text-sm">
+                <h3 className="font-medium mb-2">Generation Info</h3>
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                  <div>
+                    <dt className="text-muted-foreground">Source:</dt>
+                    <dd className="font-medium capitalize">
+                      {(() => {
+                        const source = changelog.metadata.generation.source;
+                        switch (source) {
+                          case "commit_range":
+                            return "Commit Range";
+                          case "single_commit":
+                            return "Single Commit";
+                          case "pull_request":
+                            return "Pull Request";
+                          case "pr_range":
+                            return "PR Range";
+                          case "release":
+                            return "Release";
+                          case "release_range":
+                            return "Release Range";
+                          default:
+                            return source;
+                        }
+                      })()}
+                    </dd>
+                  </div>
+
+                  {changelog.metadata.generation.commitHash && (
+                    <div>
+                      <dt className="text-muted-foreground">Commit:</dt>
+                      <dd className="font-mono text-xs">
+                        {changelog.metadata.generation.commitHash.substring(
+                          0,
+                          7,
+                        )}
+                      </dd>
+                    </div>
+                  )}
+
+                  {changelog.metadata.generation.startRef &&
+                    changelog.metadata.generation.endRef && (
+                      <div>
+                        <dt className="text-muted-foreground">Commit Range:</dt>
+                        <dd className="font-mono text-xs">
+                          {changelog.metadata.generation.startRef.substring(
+                            0,
+                            7,
+                          )}{" "}
+                          →{" "}
+                          {changelog.metadata.generation.endRef.substring(0, 7)}
+                        </dd>
+                      </div>
+                    )}
+
+                  {changelog.metadata.generation.prNumber && (
+                    <div>
+                      <dt className="text-muted-foreground">Pull Request:</dt>
+                      <dd className="font-medium">
+                        # {changelog.metadata.generation.prNumber}
+                      </dd>
+                    </div>
+                  )}
+
+                  {changelog.metadata.generation.startPRNumber &&
+                    changelog.metadata.generation.endPRNumber && (
+                      <div>
+                        <dt className="text-muted-foreground">PR Range:</dt>
+                        <dd className="font-medium">
+                          # {changelog.metadata.generation.startPRNumber} → #{" "}
+                          {changelog.metadata.generation.endPRNumber}
+                        </dd>
+                      </div>
+                    )}
+
+                  {changelog.metadata.generation.releaseTag && (
+                    <div>
+                      <dt className="text-muted-foreground">Release Tag:</dt>
+                      <dd className="font-medium">
+                        {changelog.metadata.generation.releaseTag}
+                      </dd>
+                    </div>
+                  )}
+
+                  {changelog.metadata.generation.startReleaseTag &&
+                    changelog.metadata.generation.endReleaseTag && (
+                      <div>
+                        <dt className="text-muted-foreground">
+                          Release Range:
+                        </dt>
+                        <dd className="font-medium">
+                          {changelog.metadata.generation.startReleaseTag} →{" "}
+                          {changelog.metadata.generation.endReleaseTag}
+                        </dd>
+                      </div>
+                    )}
+
+                  {changelog.metadata.generation.generatedAt && (
+                    <div>
+                      <dt className="text-muted-foreground">Generated At:</dt>
+                      <dd className="font-medium">
+                        {formatDate(changelog.metadata.generation.generatedAt)}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+            )}
 
             <Separator />
 
