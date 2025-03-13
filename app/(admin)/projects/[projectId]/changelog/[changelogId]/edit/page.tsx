@@ -59,8 +59,13 @@ const formSchema = z.object({
       source: z.string(),
       startRef: z.string().optional(),
       endRef: z.string().optional(),
+      commitHash: z.string().optional(),
       prNumber: z.string().optional(),
+      startPRNumber: z.string().optional(),
+      endPRNumber: z.string().optional(),
       releaseTag: z.string().optional(),
+      startReleaseTag: z.string().optional(),
+      endReleaseTag: z.string().optional(),
     })
     .optional(),
 });

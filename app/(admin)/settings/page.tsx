@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSession } from "@/lib/providers/session-provider";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -123,97 +122,86 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="account" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="account">Account</TabsTrigger>
-        </TabsList>
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile Information</CardTitle>
+          <CardDescription>
+            Update your profile information and email address
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Name</Label>
+            <Input id="name" value={name} onChange={handleNameChange} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={handleEmailChange}
+            />
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button disabled={!isDirty || isLoading} onClick={handleSave}>
+            {isLoading ? "Saving..." : "Save Changes"}
+          </Button>
+        </CardFooter>
+      </Card>
 
-        <TabsContent value="account" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>
-                Update your profile information and email address
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" value={name} onChange={handleNameChange} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={handleEmailChange}
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button disabled={!isDirty || isLoading} onClick={handleSave}>
-                {isLoading ? "Saving..." : "Save Changes"}
-              </Button>
-            </CardFooter>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Security</CardTitle>
-              <CardDescription>
-                Manage your password and security settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="current-password">Current Password</Label>
-                <Input
-                  id="current-password"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm Password</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-              </div>
-              {passwordError && (
-                <p className="text-sm text-destructive">{passwordError}</p>
-              )}
-            </CardContent>
-            <CardFooter>
-              <Button
-                variant="outline"
-                onClick={handlePasswordChange}
-                disabled={
-                  !currentPassword ||
-                  !newPassword ||
-                  !confirmPassword ||
-                  isLoading
-                }
-              >
-                {isLoading ? "Processing..." : "Change Password"}
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <Card>
+        <CardHeader>
+          <CardTitle>Security</CardTitle>
+          <CardDescription>
+            Manage your password and security settings
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="current-password">Current Password</Label>
+            <Input
+              id="current-password"
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="new-password">New Password</Label>
+            <Input
+              id="new-password"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirm Password</Label>
+            <Input
+              id="confirm-password"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </div>
+          {passwordError && (
+            <p className="text-sm text-destructive">{passwordError}</p>
+          )}
+        </CardContent>
+        <CardFooter>
+          <Button
+            variant="outline"
+            onClick={handlePasswordChange}
+            disabled={
+              !currentPassword || !newPassword || !confirmPassword || isLoading
+            }
+          >
+            {isLoading ? "Processing..." : "Change Password"}
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
