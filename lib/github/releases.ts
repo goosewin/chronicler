@@ -16,8 +16,8 @@ export async function fetchReleaseCommits(
   const octokit = createGitHubClient(accessToken);
 
   try {
-    // Find the release by tag
-    const release = await octokit.repos.getReleaseByTag({
+    // Find the release by tag - we don't use this variable, so removing it
+    await octokit.repos.getReleaseByTag({
       owner: repoOwner,
       repo: repoName,
       tag: tagName,

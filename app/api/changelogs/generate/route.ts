@@ -18,14 +18,6 @@ interface CommitData {
   authors: string[];
 }
 
-interface ChangelogSections {
-  Features: string[];
-  "Bug Fixes": string[];
-  Improvements: string[];
-  "Other Changes": string[];
-  [key: string]: string[];
-}
-
 export async function POST(request: NextRequest) {
   try {
     const authResult = await requireAuth(request);
@@ -340,11 +332,11 @@ async function fetchReleaseForChangelog(
 
 // Helper function to generate a changelog from categorized commits
 function generateChangelogFromCategories(
-  categories: Record<string, any[]>,
+  categories: Record<string, Commit[]>,
   title: string,
 ): string {
   // Get all commits from all categories
-  const allCommits: any[] = [];
+  const allCommits: Commit[] = [];
 
   // Collect commits from each category
   for (const [category, commits] of Object.entries(categories)) {
@@ -352,13 +344,15 @@ function generateChangelogFromCategories(
       // Add category context to each commit
       const categorizedCommits = commits.map((commit) => {
         if (typeof commit === "object" && commit.message) {
+          // Create a new object with the correct Commit properties
+          // plus an additional category property
           return {
+            hash: commit.hash || "",
             message: commit.message,
+            author: commit.author || "",
+            date: commit.date || "",
             category,
-            sha: commit.sha || null,
-            author: commit.author || null,
-            date: commit.date || null,
-          };
+          } as Commit & { category: string };
         }
         return commit;
       });
@@ -377,65 +371,30 @@ function generateSimpleChangelog(commitData: CommitData): string {
 }
 
 // Unified function to generate changelog with LLM
-function generateChangelogWithLLM(commits: any[], title: string): string {
+function generateChangelogWithLLM(commits: Commit[], title: string): string {
   // If we have no commits, return a simple message
   if (!commits || commits.length === 0) {
     return `# ${title}\n\nNo changes to report in this update.`;
   }
 
   try {
-    // In a real implementation, we would make an API call to the OpenAI API
-    // For now, we'll use the Mastra workflow that's already set up
-
     // Extract commit messages for the prompt
     const commitMessages = commits
       .map((commit) => {
         if (typeof commit === "string") return commit;
         if (commit && typeof commit === "object") {
           // Include category if available for better context
-          const category = commit.category ? `[${commit.category}] ` : "";
+          const category = (commit as { category?: string }).category ? `[${(commit as { category?: string }).category}] ` : "";
           return `${category}${commit.message || ""}`;
         }
         return "";
       })
       .filter(Boolean);
 
-    // If we're in production, we could use OpenAI API directly:
-    // const openai = new OpenAI(process.env.OPENAI_API_KEY);
-    // const response = await openai.chat.completions.create({...});
-
     // Here's what we would send to the LLM
-    const prompt = `
-Generate a professional, user-friendly changelog based on the following commit messages.
-Focus on explaining changes from the end-user perspective, similar to Twilio's style.
-
-The changelog should:
-- Be well-organized and clear
-- Focus on user benefits rather than technical details
-- Skip purely technical changes that don't impact the user experience
-- Have a polished, professional tone
-- Group related changes together into meaningful sections
-- Use natural language that non-technical users can understand
-
-TITLE: ${title}
-
-COMMIT MESSAGES:
-${commitMessages.join("\n")}
-
-Format as Markdown. Start with a brief introduction paragraph followed by clear sections.
-Use a tone similar to this example from Twilio:
-
-"We're excited to announce that Flex UI 2.11.0 is now available. This release includes:
-
-New metrics in Queue stats monitoring that enable you to monitor agent availability. 
-
-An update to the Teams view page to add the queue name to each task card for quick reference without an extra click.
-
-Throughout Flex UI, you'll find feature and UI enhancements, bug fixes, and more."
-`;
-
-    // Since we don't have a direct OpenAI integration yet, we'll use
-    // a placeholder implementation that follows Twilio's style
+    /* const prompt = `
+    Generate a professional, user-friendly changelog...
+    `; */
 
     // For now, return a Twilio-styled changelog using the available commit data
     // This is a temporary solution until the LLM integration is fully implemented
@@ -448,7 +407,7 @@ Throughout Flex UI, you'll find feature and UI enhancements, bug fixes, and more
 
 // Temporary function to create a Twilio-style changelog until LLM integration is complete
 // This should be replaced with actual LLM calls in production
-function createTwilioStyleChangelog(commits: any[], title: string): string {
+function createTwilioStyleChangelog(commits: Commit[], title: string): string {
   const isRelease = title.toLowerCase().includes("release");
 
   // Extract meaningful messages

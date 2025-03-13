@@ -49,12 +49,14 @@ export type ChangelogGenerationInput = z.infer<
 >;
 
 // Output schema for the workflow
+// Use type-only export to avoid the linting error
 const ChangelogOutputSchema = z.object({
   changelog: z.string(),
   summary: z.string().optional(),
   metadata: z.record(z.any()),
 });
 
+// Export as type only since it's only used as a type
 export type ChangelogOutput = z.infer<typeof ChangelogOutputSchema>;
 
 // Step 1: Analyze the commit messages and categorize them
