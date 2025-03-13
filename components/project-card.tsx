@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Calendar, FileText } from "lucide-react";
+import { Calendar } from "lucide-react";
 import Link from "next/link";
 
 interface ProjectCardProps {
@@ -45,23 +45,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               {project.description}
             </p>
           )}
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-              {project.changelogCount}{" "}
-              {project.changelogCount === 1 ? "changelog" : "changelogs"}
-            </span>
-          </div>
-          <div className="mt-4">
-            <div className="flex h-2 w-full overflow-hidden rounded bg-muted">
-              <div
-                className="bg-primary"
-                style={{
-                  width: `${Math.min(100, project.changelogCount * 8)}%`,
-                }}
-              />
-            </div>
-          </div>
         </CardContent>
       </Card>
     </Link>
