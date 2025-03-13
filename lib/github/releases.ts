@@ -2,14 +2,16 @@ import { RestEndpointMethodTypes } from "@octokit/rest";
 import { createGitHubClient } from "./client";
 import { Commit, fetchCommitsBetweenRefs } from "./commits";
 
-type Release = RestEndpointMethodTypes["repos"]["listReleases"]["response"]["data"][0];
-type RepoCommit = RestEndpointMethodTypes["repos"]["listCommits"]["response"]["data"][0];
+type Release =
+  RestEndpointMethodTypes["repos"]["listReleases"]["response"]["data"][0];
+type RepoCommit =
+  RestEndpointMethodTypes["repos"]["listCommits"]["response"]["data"][0];
 
 export async function fetchReleaseCommits(
   repoOwner: string,
   repoName: string,
   tagName: string,
-  accessToken?: string
+  accessToken?: string,
 ): Promise<Commit[]> {
   const octokit = createGitHubClient(accessToken);
 
@@ -28,11 +30,17 @@ export async function fetchReleaseCommits(
       per_page: 100,
     });
 
-    const currentReleaseIndex = releases.data.findIndex((r: Release) => r.tag_name === tagName);
+    const currentReleaseIndex = releases.data.findIndex(
+      (r: Release) => r.tag_name === tagName,
+    );
 
     // If this release was found and there's a previous release, compare them
-    if (currentReleaseIndex !== -1 && currentReleaseIndex < releases.data.length - 1) {
-      const previousReleaseTag = releases.data[currentReleaseIndex + 1].tag_name;
+    if (
+      currentReleaseIndex !== -1 &&
+      currentReleaseIndex < releases.data.length - 1
+    ) {
+      const previousReleaseTag =
+        releases.data[currentReleaseIndex + 1].tag_name;
 
       // Get commits between the previous release and this one
       return fetchCommitsBetweenRefs(
@@ -40,7 +48,7 @@ export async function fetchReleaseCommits(
         repoName,
         previousReleaseTag,
         tagName,
-        accessToken
+        accessToken,
       );
     }
 
@@ -68,6 +76,8 @@ export async function fetchReleaseCommits(
     }));
   } catch (error) {
     console.error("Error fetching release commits:", error);
-    throw new Error(`Failed to fetch commits for release tag ${tagName}: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to fetch commits for release tag ${tagName}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
-} 
+}

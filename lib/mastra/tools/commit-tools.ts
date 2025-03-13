@@ -49,16 +49,17 @@ export const analyzeCommitsTool = new Tool({
     };
 
     // Conventional commit regex pattern
-    const conventionalCommitPattern = /^(feat|fix|docs|chore|refactor|style|test|perf|ci|build|revert)(\([a-z-]+\))?!?:\s(.+)$/i;
+    const conventionalCommitPattern =
+      /^(feat|fix|docs|chore|refactor|style|test|perf|ci|build|revert)(\([a-z-]+\))?!?:\s(.+)$/i;
 
     for (const commit of commitData.commits) {
-      const message = commit.message.split('\n')[0].trim(); // Get first line
+      const message = commit.message.split("\n")[0].trim(); // Get first line
 
       const match = message.match(conventionalCommitPattern);
 
       if (match) {
         const type = match[1].toLowerCase();
-        const scope = match[2] ? match[2].replace(/[()]/g, '') : null;
+        const scope = match[2] ? match[2].replace(/[()]/g, "") : null;
         const description = match[3].trim();
 
         const commitInfo = {
@@ -70,37 +71,37 @@ export const analyzeCommitsTool = new Tool({
         };
 
         switch (type) {
-          case 'feat':
+          case "feat":
             categories.features.push(commitInfo);
             break;
-          case 'fix':
+          case "fix":
             categories.fixes.push(commitInfo);
             break;
-          case 'docs':
+          case "docs":
             categories.docs.push(commitInfo);
             break;
-          case 'chore':
+          case "chore":
             categories.chore.push(commitInfo);
             break;
-          case 'refactor':
+          case "refactor":
             categories.refactor.push(commitInfo);
             break;
-          case 'style':
+          case "style":
             categories.style.push(commitInfo);
             break;
-          case 'test':
+          case "test":
             categories.test.push(commitInfo);
             break;
-          case 'perf':
+          case "perf":
             categories.perf.push(commitInfo);
             break;
-          case 'ci':
+          case "ci":
             categories.ci.push(commitInfo);
             break;
-          case 'build':
+          case "build":
             categories.build.push(commitInfo);
             break;
-          case 'revert':
+          case "revert":
             categories.revert.push(commitInfo);
             break;
           default:
@@ -117,17 +118,41 @@ export const analyzeCommitsTool = new Tool({
           date: commit.date,
         };
 
-        if (msg.includes('add') || msg.includes('new') || msg.includes('feature') || msg.includes('implement') || msg.includes('support')) {
+        if (
+          msg.includes("add") ||
+          msg.includes("new") ||
+          msg.includes("feature") ||
+          msg.includes("implement") ||
+          msg.includes("support")
+        ) {
           categories.features.push(commitInfo);
-        } else if (msg.includes('fix') || msg.includes('bug') || msg.includes('issue') || msg.includes('resolve') || msg.includes('correct')) {
+        } else if (
+          msg.includes("fix") ||
+          msg.includes("bug") ||
+          msg.includes("issue") ||
+          msg.includes("resolve") ||
+          msg.includes("correct")
+        ) {
           categories.fixes.push(commitInfo);
-        } else if (msg.includes('doc') || msg.includes('readme') || msg.includes('comment')) {
+        } else if (
+          msg.includes("doc") ||
+          msg.includes("readme") ||
+          msg.includes("comment")
+        ) {
           categories.docs.push(commitInfo);
-        } else if (msg.includes('refactor') || msg.includes('clean') || msg.includes('restructure')) {
+        } else if (
+          msg.includes("refactor") ||
+          msg.includes("clean") ||
+          msg.includes("restructure")
+        ) {
           categories.refactor.push(commitInfo);
-        } else if (msg.includes('test')) {
+        } else if (msg.includes("test")) {
           categories.test.push(commitInfo);
-        } else if (msg.includes('perf') || msg.includes('performance') || msg.includes('optimize')) {
+        } else if (
+          msg.includes("perf") ||
+          msg.includes("performance") ||
+          msg.includes("optimize")
+        ) {
           categories.perf.push(commitInfo);
         } else {
           categories.other.push(commitInfo);
@@ -158,7 +183,7 @@ export const analyzeCommitsTool = new Tool({
           end: commitData.endDate,
         },
         authors: commitData.authors,
-      }
+      },
     };
   },
 });
@@ -207,7 +232,10 @@ export const generateChangelogMarkdownTool = new Tool({
     let markdown = `# ${title}\n\n`;
 
     // Add date range if available
-    if (categorizedCommits.stats.dateRange.start && categorizedCommits.stats.dateRange.end) {
+    if (
+      categorizedCommits.stats.dateRange.start &&
+      categorizedCommits.stats.dateRange.end
+    ) {
       const startDate = new Date(categorizedCommits.stats.dateRange.start);
       const endDate = new Date(categorizedCommits.stats.dateRange.end);
       markdown += `Generated from changes between ${startDate.toDateString()} and ${endDate.toDateString()}.\n\n`;
@@ -218,27 +246,37 @@ export const generateChangelogMarkdownTool = new Tool({
       markdown += `## Summary\n\n`;
       markdown += `- Total changes: ${categorizedCommits.stats.total}\n`;
 
-      for (const [category, count] of Object.entries(categorizedCommits.stats.byCategory)) {
-        if (count > 0 && categoryMappings[category as keyof typeof categoryMappings]) {
+      for (const [category, count] of Object.entries(
+        categorizedCommits.stats.byCategory,
+      )) {
+        if (
+          count > 0 &&
+          categoryMappings[category as keyof typeof categoryMappings]
+        ) {
           markdown += `- ${categoryMappings[category as keyof typeof categoryMappings]}: ${count}\n`;
         }
       }
 
       if (categorizedCommits.stats.authors.length > 0) {
-        markdown += `- Contributors: ${categorizedCommits.stats.authors.join(', ')}\n`;
+        markdown += `- Contributors: ${categorizedCommits.stats.authors.join(", ")}\n`;
       }
 
       markdown += `\n`;
     }
 
     // Add sections for each category that has commits
-    for (const [category, commits] of Object.entries(categorizedCommits.categories)) {
-      if (commits.length > 0 && categoryMappings[category as keyof typeof categoryMappings]) {
+    for (const [category, commits] of Object.entries(
+      categorizedCommits.categories,
+    )) {
+      if (
+        commits.length > 0 &&
+        categoryMappings[category as keyof typeof categoryMappings]
+      ) {
         markdown += `## ${categoryMappings[category as keyof typeof categoryMappings]}\n\n`;
 
         for (const commit of commits) {
           // Check if scope exists and add it to the message
-          const scopeText = commit.scope ? `**${commit.scope}:** ` : '';
+          const scopeText = commit.scope ? `**${commit.scope}:** ` : "";
           markdown += `- ${scopeText}${commit.message}\n`;
         }
 
@@ -248,4 +286,4 @@ export const generateChangelogMarkdownTool = new Tool({
 
     return markdown;
   },
-}); 
+});

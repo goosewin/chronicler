@@ -53,12 +53,20 @@ export default async function DashboardPage() {
       <div className="container py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Dashboard</h1>
-          <Link href="/projects/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Project
-            </Button>
-          </Link>
+          <div className="flex flex-row gap-4">
+            <Link href="/projects/new">
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                New Project
+              </Button>
+            </Link>
+            <Link href="/changelogs/new">
+              <Button variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                New Changelog
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">

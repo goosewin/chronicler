@@ -1,5 +1,6 @@
 "use client";
 
+import { ChangelogGenerator } from "@/components/changelog-generator";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -57,6 +58,7 @@ export default function NewChangelogPage({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showGenerator, setShowGenerator] = useState(false);
   const { projectId } = use(params);
   const [date, setDate] = useState<Date>(new Date());
 
@@ -142,6 +144,12 @@ export default function NewChangelogPage({
     }
   };
 
+  const handleGeneratedChangelog = (content: string) => {
+    form.setValue("content", content);
+    setShowGenerator(false);
+    toast.success("Changelog content has been added to the form");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -154,29 +162,106 @@ export default function NewChangelogPage({
       </div>
 
       {!isLoading && project ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>New Changelog</CardTitle>
-            <CardDescription>
-              Create a new changelog for {project.name}
-            </CardDescription>
-          </CardHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>New Changelog</CardTitle>
+              <CardDescription>
+                Create a new changelog for {project.name}
+              </CardDescription>
+            </CardHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)}>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="version"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Version</FormLabel>
+                          <FormControl>
+                            <Input placeholder="v1.0.0" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            Version or release name (e.g., &quot;1.0.0&quot;,
+                            &quot;v2.3&quot;, &quot;April Update&quot;)
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="releaseDate"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Release Date</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground",
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(new Date(field.value), "PPP")
+                                  ) : (
+                                    <span>Pick a date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-auto p-0"
+                              align="start"
+                            >
+                              <Calendar
+                                mode="single"
+                                selected={date}
+                                onSelect={(newDate) => {
+                                  if (newDate) {
+                                    setDate(newDate);
+                                    // Update the form with ISO string
+                                    field.onChange(newDate.toISOString());
+                                  }
+                                }}
+                                disabled={(date) =>
+                                  date > new Date() ||
+                                  date < new Date("1900-01-01")
+                                }
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormDescription>
+                            The date when this version was released
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <FormField
                     control={form.control}
-                    name="version"
+                    name="commitHash"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Version</FormLabel>
+                        <FormLabel>Commit Hash (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="v1.0.0" {...field} />
+                          <Input
+                            placeholder="git commit hash or tag"
+                            {...field}
+                          />
                         </FormControl>
                         <FormDescription>
-                          Version or release name (e.g., &quot;1.0.0&quot;,
-                          &quot;v2.3&quot;, &quot;April Update&quot;)
+                          Git commit hash, tag, or reference for this release
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -185,140 +270,88 @@ export default function NewChangelogPage({
 
                   <FormField
                     control={form.control}
-                    name="releaseDate"
+                    name="content"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Release Date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground",
-                                )}
-                              >
-                                {field.value ? (
-                                  format(new Date(field.value), "PPP")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={date}
-                              onSelect={(newDate) => {
-                                if (newDate) {
-                                  setDate(newDate);
-                                  // Update the form with ISO string
-                                  field.onChange(newDate.toISOString());
-                                }
-                              }}
-                              disabled={(date) =>
-                                date > new Date() ||
-                                date < new Date("1900-01-01")
-                              }
-                              initialFocus
+                      <FormItem>
+                        <div className="flex justify-between items-center">
+                          <FormLabel>Changelog Content</FormLabel>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowGenerator(!showGenerator)}
+                          >
+                            {showGenerator
+                              ? "Hide Generator"
+                              : "Generate Content"}
+                          </Button>
+                        </div>
+                        {showGenerator && (
+                          <div className="my-4">
+                            <ChangelogGenerator
+                              projectId={projectId}
+                              onGenerated={handleGeneratedChangelog}
                             />
-                          </PopoverContent>
-                        </Popover>
-                        <FormDescription>
-                          The date when this version was released
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="commitHash"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Commit Hash (Optional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="git commit hash or tag"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Git commit hash, tag, or reference for this release
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="content"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Changelog Content</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="## What's New
+                          </div>
+                        )}
+                        <FormControl>
+                          <Textarea
+                            placeholder="## What's New
                                       - Added feature X
                                       - Improved performance by 20%
 
                                       ## Bug Fixes
                                       - Fixed issue with login
                                       - Resolved crash on startup"
-                          className="min-h-[200px] font-mono text-sm"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Full changelog content in Markdown format
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="isPublished"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                      <div className="space-y-0.5">
-                        <FormLabel>Publish Changelog</FormLabel>
+                            className="min-h-[200px] font-mono text-sm"
+                            {...field}
+                          />
+                        </FormControl>
                         <FormDescription>
-                          Make this changelog visible to all users
+                          Full changelog content in Markdown format
                         </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-              <CardFooter className="justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={() => router.push(`/projects/${projectId}`)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Creating..." : "Create Changelog"}
-                </Button>
-              </CardFooter>
-            </form>
-          </Form>
-        </Card>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="isPublished"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                          <FormLabel>Publish Changelog</FormLabel>
+                          <FormDescription>
+                            Make this changelog visible to all users
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+                <CardFooter className="justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={() => router.push(`/projects/${projectId}`)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Creating..." : "Create Changelog"}
+                  </Button>
+                </CardFooter>
+              </form>
+            </Form>
+          </Card>
+        </>
       ) : (
         <div className="py-8 text-center text-muted-foreground">
           <p>Project not found or you don&apos;t have access to it.</p>

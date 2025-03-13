@@ -1,7 +1,10 @@
 import { Step, Workflow } from "@mastra/core/workflows";
 import { z } from "zod";
 import { aiSummaryAgent, changelogAgent } from "../agents/changelog-agent";
-import { analyzeCommitsTool, generateChangelogMarkdownTool } from "../tools/commit-tools";
+import {
+  analyzeCommitsTool,
+  generateChangelogMarkdownTool,
+} from "../tools/commit-tools";
 
 // Type for the commits input
 const CommitSchema = z.object({
@@ -41,7 +44,9 @@ const ChangelogGenerationInputSchema = z.object({
   generateSummary: z.boolean().optional(),
 });
 
-export type ChangelogGenerationInput = z.infer<typeof ChangelogGenerationInputSchema>;
+export type ChangelogGenerationInput = z.infer<
+  typeof ChangelogGenerationInputSchema
+>;
 
 // Output schema for the workflow
 const ChangelogOutputSchema = z.object({
@@ -66,7 +71,9 @@ const analyzeCommitsStep = new Step({
       throw new Error("Input data not found");
     }
 
-    return analyzeCommitsTool.execute?.({ context: { commitData: input.commitData } });
+    return analyzeCommitsTool.execute?.({
+      context: { commitData: input.commitData },
+    });
   },
 });
 
@@ -80,7 +87,8 @@ const generateTechnicalChangelogStep = new Step({
     includeStats: z.boolean().optional(),
   }),
   execute: async ({ context }) => {
-    const categorizedCommits = context?.getStepResult<CategorizedCommits>("analyze-commits");
+    const categorizedCommits =
+      context?.getStepResult<CategorizedCommits>("analyze-commits");
     const input = context?.getStepResult<ChangelogGenerationInput>("trigger");
 
     if (!categorizedCommits || !input) {
@@ -103,7 +111,7 @@ const generateTechnicalChangelogStep = new Step({
         },
         title: input.title,
         includeStats: input.includeStats,
-      }
+      },
     });
   },
 });
@@ -117,7 +125,9 @@ const generateUserFriendlyChangelogStep = new Step({
     commitData: CommitDataSchema,
   }),
   execute: async ({ context }) => {
-    const technicalChangelog = context?.getStepResult<string>("generate-technical-changelog");
+    const technicalChangelog = context?.getStepResult<string>(
+      "generate-technical-changelog",
+    );
     const input = context?.getStepResult<{ commitData: CommitData }>("trigger");
 
     if (!technicalChangelog || !input) {
@@ -165,7 +175,9 @@ const generateSummaryStep = new Step({
     generateSummary: z.boolean().optional(),
   }),
   execute: async ({ context }) => {
-    const userFriendlyChangelog = context?.getStepResult<string>("generate-user-friendly-changelog");
+    const userFriendlyChangelog = context?.getStepResult<string>(
+      "generate-user-friendly-changelog",
+    );
     const input = context?.getStepResult<ChangelogGenerationInput>("trigger");
 
     if (!userFriendlyChangelog || !input) {

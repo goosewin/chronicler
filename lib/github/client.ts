@@ -4,4 +4,4 @@ export function createGitHubClient(accessToken?: string) {
   return new Octokit({
     auth: accessToken,
   });
-} 
+}

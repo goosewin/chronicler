@@ -60,4 +60,4 @@ export const aiSummaryAgent = new Agent({
     "Version 2.3 focuses on stability and performance, fixing several crash issues and speeding up file operations by up to 40%. A new dark mode has been added along with improved keyboard shortcuts for power users."
   `,
   model: openai("gpt-4o"),
-}); 
+});

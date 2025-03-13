@@ -5,7 +5,7 @@ export async function fetchPullRequestCommits(
   repoOwner: string,
   repoName: string,
   prNumber: number,
-  accessToken?: string
+  accessToken?: string,
 ): Promise<Commit[]> {
   const octokit = createGitHubClient(accessToken);
 
@@ -17,7 +17,7 @@ export async function fetchPullRequestCommits(
       pull_number: prNumber,
     });
 
-    return response.data.map(commit => ({
+    return response.data.map((commit) => ({
       hash: commit.sha,
       message: commit.commit.message,
       author: commit.commit.author?.name || "Unknown",
@@ -25,6 +25,8 @@ export async function fetchPullRequestCommits(
     }));
   } catch (error) {
     console.error("Error fetching pull request commits:", error);
-    throw new Error(`Failed to fetch commits for PR #${prNumber}: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to fetch commits for PR #${prNumber}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
-} 
+}

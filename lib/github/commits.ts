@@ -12,7 +12,7 @@ export async function fetchCommitsBetweenRefs(
   repoName: string,
   startRef: string,
   endRef: string,
-  accessToken?: string
+  accessToken?: string,
 ): Promise<Commit[]> {
   const octokit = createGitHubClient(accessToken);
 
@@ -38,7 +38,7 @@ export async function fetchCommitsBetweenRefs(
       head: endCommit.data.sha,
     });
 
-    return commits.data.commits.map(commit => ({
+    return commits.data.commits.map((commit) => ({
       hash: commit.sha,
       message: commit.commit.message,
       author: commit.commit.author?.name || "Unknown",
@@ -46,11 +46,17 @@ export async function fetchCommitsBetweenRefs(
     }));
   } catch (error) {
     console.error("Error fetching commits between refs:", error);
-    throw new Error(`Failed to fetch commits between ${startRef} and ${endRef}: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to fetch commits between ${startRef} and ${endRef}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
-export async function parseRepoDetails(repositoryUrl: string, owner?: string, name?: string): Promise<{ owner: string, name: string }> {
+export async function parseRepoDetails(
+  repositoryUrl: string,
+  owner?: string,
+  name?: string,
+): Promise<{ owner: string; name: string }> {
   // If owner and name are provided directly, use them
   if (owner && name) {
     return { owner, name };
@@ -63,28 +69,30 @@ export async function parseRepoDetails(repositoryUrl: string, owner?: string, na
       urlObj = new URL(repositoryUrl);
     } catch {
       // Handle non-URL formats like "owner/repo"
-      const parts = repositoryUrl.split('/');
+      const parts = repositoryUrl.split("/");
       if (parts.length >= 2) {
         return {
           owner: parts[parts.length - 2],
-          name: parts[parts.length - 1].replace('.git', '')
+          name: parts[parts.length - 1].replace(".git", ""),
         };
       }
       throw new Error("Invalid repository URL format");
     }
 
     // Handle GitHub URLs
-    const pathParts = urlObj.pathname.split('/').filter(Boolean);
+    const pathParts = urlObj.pathname.split("/").filter(Boolean);
     if (pathParts.length >= 2) {
       return {
         owner: pathParts[0],
-        name: pathParts[1].replace('.git', '')
+        name: pathParts[1].replace(".git", ""),
       };
     }
 
     throw new Error("Could not parse repository owner and name from URL");
   } catch (error) {
     console.error("Error parsing repository details:", error);
-    throw new Error(`Failed to parse repository details: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to parse repository details: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
-} 
+}

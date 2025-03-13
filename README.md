@@ -38,7 +38,7 @@ cd chronicler
 2. Install dependencies:
 
 ```bash
-pnpm install
+bun install
 ```
 
 3. Set up your environment variables:
@@ -50,13 +50,13 @@ cp .env.example .env.local
 4. Set up your database:
 
 ```bash
-pnpm db:push
+bun db:push
 ```
 
 5. Run the development server:
 
 ```bash
-pnpm dev
+bun dev
 ```
 
 Visit `http://localhost:3000` to see your app.
@@ -88,20 +88,20 @@ ADMIN_EMAIL=           # Initial admin user email
 ```
 app/              # Next.js app router pages
 components/       # React components
-lib/             # Utility functions and configs
-public/          # Static assets
+lib/              # Utility functions and configs
+public/           # Static assets
 ```
 
 ### Commands
 
 ```bash
-pnpm dev             # Start development server
-pnpm build           # Build for production
-pnpm start           # Start production server
-pnpm lint            # Run ESLint
-pnpm test            # Run tests
-pnpm db:push         # Push database changes
-pnpm db:studio       # Open Drizzle Studio
+bun dev             # Start development server
+bun run build       # Build for production
+bun start           # Start production server
+bun lint            # Run ESLint
+bun format          # Run Prettier
+bun db:push         # Push database changes
+bun db:studio       # Open Drizzle Studio
 ```
 
 ## Deployment
