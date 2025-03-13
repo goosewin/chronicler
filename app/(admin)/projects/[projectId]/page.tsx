@@ -198,7 +198,7 @@ export default function ProjectPage({
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold">Recent Changelogs</h2>
-          <Link href={`/projects/${project.id}/changelog/new`}>
+          <Link href={`/projects/${project.id}/changelogs/new`}>
             <Button>New Changelog</Button>
           </Link>
         </div>
