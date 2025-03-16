@@ -14,7 +14,7 @@ Chronicler is a modern changelog management system that helps automate the creat
 
 ## AI-Powered Workflows
 
-Chronicler leverages [Mastra](https://github.com/mastralib/mastra), a powerful framework for building AI-driven workflows:
+Chronicler leverages [Mastra](https://github.com/mastra-ai/mastra), a powerful framework for building AI-driven workflows:
 
 - **Intelligent Agents** - Custom AI agents analyze commits and generate human-readable changelog entries
 - **Automated Processing** - Extract meaningful changes from technical commit messages
